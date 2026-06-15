@@ -113,7 +113,7 @@ class Llm7NewsTranslator
         }
 
         return [
-            'translated_title' => trim($text, " \t\n\r\0\x0B\"'`ØŒ"),
+            'translated_title' => trim($text, " \t\n\r\0\x0B\"'`،"),
             'translated_summary' => null,
             'translated_body' => null,
         ];

@@ -63,7 +63,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/ranking', [RankingController::class, 'index'])->name('ranking');
     Route::get('/settlements', [RankingController::class, 'settlements'])->name('settlements');
     Route::get('/invite', [InviteController::class, 'index'])->name('invite');
-    Route::get('/news/{article:slug}', [UserNewsController::class, 'show'])->name('news.show');
+    Route::get('/dashboard/news/{article:slug}', [UserNewsController::class, 'show'])->name('news.show');
 });
 
 

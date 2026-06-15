@@ -122,7 +122,7 @@ class GeminiHeadlineTranslator
         }
 
         return [
-            'translated_title' => trim($text, " \t\n\r\0\x0B\"'`ÃƒÆ’Ã‹Å“Ãƒâ€¦Ã¢â‚¬â„¢"),
+            'translated_title' => trim($text, " \t\n\r\0\x0B\"'`،"),
             'translated_summary' => null,
             'translated_body' => null,
         ];
