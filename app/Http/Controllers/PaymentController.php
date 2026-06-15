@@ -85,7 +85,7 @@ class PaymentController extends Controller
             ->amount($transaction->amount_gateway)
             ->detail([
                 'mobile' => $request->user()->mobile,
-                'description' => 'پرداخت پیش‌بینی کاپ خانوادگی',
+            'description' => 'پرداخت ',
                 'orderId' => 'prediction-'.$entry->id.'-'.$transaction->id,
             ]);
 
