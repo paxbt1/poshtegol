@@ -1,3 +1,13 @@
+FROM node:22-bookworm-slim AS assets
+
+WORKDIR /app
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+COPY package.json package-lock.json ./
+RUN npm config set registry "$NPM_REGISTRY" \
+    && npm ci --no-audit --no-fund --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+COPY . .
+RUN npm run build
+
 FROM php:8.3-fpm-alpine AS base
 
 ARG APK_MIRROR=https://mirrors.aliyun.com/alpine
@@ -5,7 +15,7 @@ RUN printf '%s/v%s/main\n%s/v%s/community\n' "$APK_MIRROR" "$(cut -d. -f1,2 /etc
 
 RUN apk add --no-cache \
     bash curl git icu-dev libzip-dev oniguruma-dev freetype-dev libjpeg-turbo-dev libpng-dev libwebp-dev \
-    nginx supervisor nodejs npm sqlite sqlite-dev postgresql-dev mysql-client \
+    nginx supervisor sqlite sqlite-dev postgresql-dev mysql-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) pdo pdo_mysql pdo_sqlite intl zip bcmath gd opcache \
     && rm -rf /var/cache/apk/*
@@ -16,12 +26,9 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts --optimize-autoloader
 
-COPY package.json package-lock.json ./
-RUN npm ci
-
 COPY . .
-RUN npm run build && rm -rf node_modules \
-    && composer dump-autoload --optimize \
+COPY --from=assets /app/public/build public/build
+RUN composer dump-autoload --optimize \
     && php artisan package:discover --ansi \
     && mkdir -p storage/framework/{cache,sessions,views} storage/logs storage/database bootstrap/cache public/media/news/images public/media/ads \
     && touch storage/database/database.sqlite \

@@ -57,6 +57,11 @@ class NewsSettings
         return max(1, min(25, (int) $this->get('news_max_per_sync', config('news.max_per_sync', 8))));
     }
 
+    public function categoryQueriesEnabled(): bool
+    {
+        return filter_var($this->get('news_category_queries_enabled', config('news.category_queries_enabled', false) ? '1' : '0'), FILTER_VALIDATE_BOOLEAN);
+    }
+
     public function downloadImages(): bool
     {
         return filter_var($this->get('news_download_images', config('news.download_images', true) ? '1' : '0'), FILTER_VALIDATE_BOOLEAN);
@@ -110,6 +115,10 @@ class NewsSettings
 
     public function categoryQueries(): array
     {
+        if (! $this->categoryQueriesEnabled()) {
+            return [];
+        }
+
         $default = [
             'world-cup-2026' => 'FIFA World Cup 2026 OR World Cup 2026',
             'world-football' => 'football OR soccer OR UEFA OR Premier League OR Champions League',

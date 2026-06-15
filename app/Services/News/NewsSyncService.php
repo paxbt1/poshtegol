@@ -20,7 +20,7 @@ class NewsSyncService
         private readonly NewsImageDownloader $imageDownloader,
     ) {}
 
-    public function sync(): array
+    public function sync(bool $translateArticles = true): array
     {
         $startedAt = now();
         $provider = $this->settings->provider();
@@ -52,7 +52,7 @@ class NewsSyncService
                     }
                     $seen[$normalized['hash']] = true;
 
-                    $result = $this->persistArticle($normalized, $batch['category_id'], $translationErrors);
+                    $result = $this->persistArticle($normalized, $batch['category_id'], $translationErrors, $translateArticles);
                     $created += $result['created'];
                     $updated += $result['updated'];
                     $translated += $result['translated'];
@@ -131,7 +131,7 @@ class NewsSyncService
         return $batches;
     }
 
-    private function persistArticle(array $normalized, ?int $preferredCategoryId, array &$translationErrors): array
+    private function persistArticle(array $normalized, ?int $preferredCategoryId, array &$translationErrors, bool $translateArticles): array
     {
         $article = NewsArticle::query()->where('hash', $normalized['hash'])->first();
         $wasCreated = false;
@@ -154,7 +154,7 @@ class NewsSyncService
             }
         }
 
-        if ($wasCreated || ! $article->translated_title || ! $article->translated_summary || (! $article->translated_body && $article->original_content)) {
+        if ($translateArticles && ($wasCreated || ! $article->translated_title || ! $article->translated_summary || (! $article->translated_body && $article->original_content))) {
             try {
                 $translation = $this->translate(
                     $normalized['original_title'],

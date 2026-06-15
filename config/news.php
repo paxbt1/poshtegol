@@ -9,6 +9,7 @@ return [
     'language' => env('NEWS_LANGUAGE', 'en'),
     'country' => env('NEWS_COUNTRY', ''),
     'max_per_sync' => env('NEWS_MAX_PER_SYNC', 8),
+    'category_queries_enabled' => env('NEWS_CATEGORY_QUERIES_ENABLED', false),
     'download_images' => env('NEWS_DOWNLOAD_IMAGES', true),
     'sort_by' => env('NEWS_SORT_BY', 'publishedAt'),
     'in_fields' => env('NEWS_IN_FIELDS', 'title,description'),
