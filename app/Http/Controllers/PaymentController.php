@@ -10,6 +10,7 @@ use App\Services\PaymentGatewaySettings;
 use App\Services\PredictionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Shetabit\Multipay\Invoice;
 use Shetabit\Payment\Facade\Payment;
@@ -23,12 +24,44 @@ class PaymentController extends Controller
         abort_unless($entry->user_id === $request->user()->id, 403);
         $entry->load('match');
 
-        if ($entry->payment_status !== 'unpaid') {
+        if ($entry->payment_status === 'pending') {
+            $pendingTransaction = $entry->transactions()
+                ->where('status', 'pending')
+                ->latest()
+                ->first();
+
+            if ($pendingTransaction?->transaction_id) {
+                return response()->json([
+                    'message' => 'در حال انتقال به درگاه پرداخت...',
+                    'redirect' => rtrim((string) config('payment.drivers.zibal.apiPaymentUrl'), '/').'/'.$pendingTransaction->transaction_id,
+                ]);
+            }
+
+            if ($pendingTransaction) {
+                $pendingTransaction->update([
+                    'status' => 'failed',
+                    'callback_payload' => ['error' => 'Payment request did not reach gateway. Reset before retry.'],
+                ]);
+
+                $entry->update([
+                    'payment_status' => 'unpaid',
+                    'prediction_status' => 'draft',
+                ]);
+
+                $entry->refresh();
+            }
+        }
+
+        if (! in_array($entry->payment_status, ['unpaid', 'failed'], true)) {
             throw ValidationException::withMessages(['payment' => 'این پیش‌بینی قبلا وارد فرایند پرداخت شده است.']);
         }
 
         if (! $lockService->canPredict($entry->match)) {
             throw ValidationException::withMessages(['payment' => 'زمان پیش‌بینی این بازی به پایان رسیده است.']);
+        }
+
+        if (config('payment.default', 'zibal') === 'zibal' && blank(config('payment.drivers.zibal.merchantId'))) {
+            throw ValidationException::withMessages(['payment' => 'مرچنت‌کد زیبال تنظیم نشده است. در حالت غیر Sandbox باید ZIBAL_MERCHANT_ID یا مقدار تنظیمات درگاه را ثبت کنید.']);
         }
 
         $transaction = PaymentTransaction::create([
@@ -56,12 +89,36 @@ class PaymentController extends Controller
                 'orderId' => 'prediction-'.$entry->id.'-'.$transaction->id,
             ]);
 
-        $redirection = Payment::via($transaction->gateway)
-            ->callbackUrl(route('payment.callback.zibal', ['transaction' => $transaction->id]))
-            ->purchase($invoice, function ($driver, $transactionId) use ($transaction) {
-                $transaction->update(['transaction_id' => (string) $transactionId]);
-            })
-            ->pay();
+        try {
+            $redirection = Payment::via($transaction->gateway)
+                ->callbackUrl(route('payment.callback.zibal', ['transaction' => $transaction->id]))
+                ->purchase($invoice, function ($driver, $transactionId) use ($transaction) {
+                    $transaction->update(['transaction_id' => (string) $transactionId]);
+                })
+                ->pay();
+        } catch (Throwable $e) {
+            Log::warning('payment purchase failed', [
+                'gateway' => $transaction->gateway,
+                'transaction_id' => $transaction->id,
+                'prediction_entry_id' => $entry->id,
+                'amount_gateway' => $transaction->amount_gateway,
+                'error' => $e->getMessage(),
+            ]);
+
+            $transaction->update([
+                'status' => 'failed',
+                'callback_payload' => ['error' => $e->getMessage()],
+            ]);
+
+            $entry->update([
+                'payment_status' => 'unpaid',
+                'prediction_status' => 'draft',
+            ]);
+
+            throw ValidationException::withMessages([
+                'payment' => 'خطا در اتصال به درگاه زیبال: '.$e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'message' => 'در حال انتقال به درگاه پرداخت...',

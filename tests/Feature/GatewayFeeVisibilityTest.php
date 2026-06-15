@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AppSetting;
 use App\Models\FootballMatch;
 use App\Models\PaymentTransaction;
 use App\Models\PredictionEntry;
@@ -61,6 +62,66 @@ class GatewayFeeVisibilityTest extends TestCase
             ->get(route('admin.payments'))
             ->assertOk()
             ->assertSee('کارمزد درگاه');
+    }
+
+    public function test_payment_requires_zibal_merchant_id_outside_sandbox(): void
+    {
+        AppSetting::setValue('payment_driver', 'zibal');
+        AppSetting::setValue('zibal_sandbox', false);
+        AppSetting::setValue('zibal_merchant_id', '');
+
+        $user = User::factory()->create();
+        $match = $this->match();
+        $entry = PredictionEntry::create([
+            'user_id' => $user->id,
+            'match_id' => $match->id,
+            'period_id' => $match->period_id,
+            'entry_amount' => 50000,
+            'gateway_fee_amount' => 5000,
+            'payable_amount' => 55000,
+            'payment_status' => 'unpaid',
+            'prediction_status' => 'draft',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('predictions.pay', $entry))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payment');
+
+        $this->assertDatabaseCount('payment_transactions', 0);
+        $this->assertSame('unpaid', $entry->fresh()->payment_status);
+    }
+
+    public function test_pending_payment_with_gateway_token_redirects_to_existing_zibal_transaction(): void
+    {
+        $user = User::factory()->create();
+        $match = $this->match();
+        $entry = PredictionEntry::create([
+            'user_id' => $user->id,
+            'match_id' => $match->id,
+            'period_id' => $match->period_id,
+            'entry_amount' => 50000,
+            'gateway_fee_amount' => 5000,
+            'payable_amount' => 55000,
+            'payment_status' => 'pending',
+            'prediction_status' => 'pending_payment',
+        ]);
+        PaymentTransaction::create([
+            'user_id' => $user->id,
+            'prediction_entry_id' => $entry->id,
+            'gateway' => 'zibal',
+            'amount' => 55000,
+            'amount_gateway' => 550000,
+            'entry_amount' => 50000,
+            'gateway_fee_amount' => 5000,
+            'transaction_id' => '123456',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('predictions.pay', $entry))
+            ->assertOk()
+            ->assertJsonPath('redirect', 'https://gateway.zibal.ir/start/123456');
     }
 
     private function match(): FootballMatch
