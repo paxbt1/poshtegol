@@ -16,6 +16,7 @@ class NewsSyncService
         private readonly NewsSettings $settings,
         private readonly GNewsClient $client,
         private readonly GeminiHeadlineTranslator $geminiTranslator,
+        private readonly Llm7NewsTranslator $llm7Translator,
         private readonly MicrosoftNewsTranslator $microsoftTranslator,
         private readonly NewsImageDownloader $imageDownloader,
     ) {}
@@ -202,13 +203,20 @@ class NewsSyncService
     private function translate(string $title, ?string $description, ?string $source, ?string $content = null): array
     {
         $primary = $this->settings->translationProvider();
-        $providers = $primary === 'microsoft' ? ['microsoft', 'gemini'] : ['gemini', 'microsoft'];
+        $providers = match ($primary) {
+            'llm7' => ['llm7', 'gemini', 'microsoft'],
+            'microsoft' => ['microsoft', 'llm7', 'gemini'],
+            default => ['gemini', 'llm7', 'microsoft'],
+        };
         $lastError = null;
 
         foreach ($providers as $provider) {
             try {
                 if ($provider === 'gemini' && $this->settings->geminiApiKey()) {
                     return $this->geminiTranslator->translateArticle($title, $description, $source, $content);
+                }
+                if ($provider === 'llm7' && $this->settings->llm7ApiKey()) {
+                    return $this->llm7Translator->translateArticle($title, $description, $source, $content);
                 }
                 if ($provider === 'microsoft' && $this->settings->microsoftTranslatorKey()) {
                     return $this->microsoftTranslator->translateArticle($title, $description, $source, $content);

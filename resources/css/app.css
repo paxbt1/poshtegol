@@ -710,6 +710,7 @@ button, input, select { font: inherit; }
 .pg-main { padding: 16px 0 34px; }
 .pg-hero-grid { display: grid; gap: 12px; }
 .pg-hero-panel, .pg-score-strip-card, .pg-side-card, .pg-soft-card, .pg-article-card, .pg-score-section { background: rgba(255,255,255,.93); border: 1px solid rgba(226,232,240,.9); border-radius: var(--pg-radius); box-shadow: var(--pg-shadow); overflow: hidden; }
+.pg-score-strip-card { padding: 15px; }
 .pg-hero-panel { min-height: 330px; }
 .pg-empty-hero { padding: 28px; min-height: 330px; color:#fff; background: linear-gradient(135deg, #071b33, #0f7a3c); display: grid; align-content: end; gap: 12px; }
 .pg-empty-hero span { color: var(--pg-gold); font-weight: 900; }

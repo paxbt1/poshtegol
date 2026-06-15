@@ -42,6 +42,8 @@ class DatabaseSeeder extends Seeder
         AppSetting::setValue('news_in_fields', env('NEWS_IN_FIELDS', 'title,description'));
         AppSetting::setValue('news_translation_provider', env('NEWS_TRANSLATION_PROVIDER', 'gemini'));
         AppSetting::setValue('gemini_model', env('GEMINI_MODEL', 'gemini-2.0-flash-lite'));
+        AppSetting::setValue('llm7_base_url', env('LLM7_BASE_URL', 'https://api.llm7.io/v1'));
+        AppSetting::setValue('llm7_model', env('LLM7_MODEL', 'default'));
         AppSetting::setValue('microsoft_translator_region', env('MICROSOFT_TRANSLATOR_REGION', ''));
         AppSetting::setValue('microsoft_translator_endpoint', env('MICROSOFT_TRANSLATOR_ENDPOINT', 'https://api.cognitive.microsofttranslator.com'));
         if (env('GNEWS_API_KEY')) {
@@ -49,6 +51,9 @@ class DatabaseSeeder extends Seeder
         }
         if (env('GEMINI_API_KEY')) {
             AppSetting::setValue('gemini_api_key', env('GEMINI_API_KEY'), true);
+        }
+        if (env('LLM7_API_KEY')) {
+            AppSetting::setValue('llm7_api_key', env('LLM7_API_KEY'), true);
         }
         if (env('MICROSOFT_TRANSLATOR_KEY')) {
             AppSetting::setValue('microsoft_translator_key', env('MICROSOFT_TRANSLATOR_KEY'), true);

@@ -20,7 +20,7 @@ class NewsSettings
     {
         $provider = strtolower((string) $this->get('news_translation_provider', config('news.translation_provider', 'gemini')));
 
-        return in_array($provider, ['gemini', 'microsoft'], true) ? $provider : 'gemini';
+        return in_array($provider, ['gemini', 'llm7', 'microsoft'], true) ? $provider : 'gemini';
     }
 
     public function gnewsApiKey(): ?string
@@ -91,6 +91,23 @@ class NewsSettings
     public function geminiModel(): string
     {
         return trim((string) $this->get('gemini_model', config('news.gemini_model', 'gemini-2.0-flash-lite'))) ?: 'gemini-2.0-flash-lite';
+    }
+
+    public function llm7ApiKey(): ?string
+    {
+        $value = trim((string) $this->get('llm7_api_key', config('news.llm7_api_key', '')));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public function llm7BaseUrl(): string
+    {
+        return rtrim((string) $this->get('llm7_base_url', config('news.llm7_base_url', 'https://api.llm7.io/v1')), '/');
+    }
+
+    public function llm7Model(): string
+    {
+        return trim((string) $this->get('llm7_model', config('news.llm7_model', 'default'))) ?: 'default';
     }
 
     public function microsoftTranslatorKey(): ?string

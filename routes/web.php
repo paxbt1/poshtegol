@@ -76,6 +76,7 @@ Route::middleware(['auth', 'admin'])->prefix('news-admin')->name('news-admin.')-
     Route::get('/news', [NewsController::class, 'index'])->name('news.index');
     Route::post('/news/sync', [NewsController::class, 'sync'])->name('news.sync');
     Route::post('/news/test-gemini', [NewsController::class, 'testGemini'])->name('news.test-gemini');
+    Route::post('/news/test-llm7', [NewsController::class, 'testLlm7'])->name('news.test-llm7');
     Route::post('/news/test-microsoft', [NewsController::class, 'testMicrosoft'])->name('news.test-microsoft');
     Route::patch('/news/{article}', [NewsController::class, 'update'])->name('news.update');
     Route::delete('/news/{article}', [NewsController::class, 'destroy'])->name('news.destroy');
@@ -114,6 +115,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/news', [NewsController::class, 'index'])->name('news.index');
     Route::post('/news/sync', [NewsController::class, 'sync'])->name('news.sync');
     Route::post('/news/test-gemini', [NewsController::class, 'testGemini'])->name('news.test-gemini');
+    Route::post('/news/test-llm7', [NewsController::class, 'testLlm7'])->name('news.test-llm7');
     Route::post('/news/test-microsoft', [NewsController::class, 'testMicrosoft'])->name('news.test-microsoft');
     Route::patch('/news/{article}', [NewsController::class, 'update'])->name('news.update');
     Route::delete('/news/{article}', [NewsController::class, 'destroy'])->name('news.destroy');

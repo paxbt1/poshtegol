@@ -51,6 +51,9 @@ class NewsAdminController extends Controller
                 'news_in_fields' => AppSetting::getValue('news_in_fields', config('news.in_fields', 'title,description')),
                 'gemini_api_key' => AppSetting::getValue('gemini_api_key', config('news.gemini_api_key', '')),
                 'gemini_model' => AppSetting::getValue('gemini_model', config('news.gemini_model', 'gemini-2.0-flash-lite')),
+                'llm7_api_key' => AppSetting::getValue('llm7_api_key', config('news.llm7_api_key', '')),
+                'llm7_base_url' => AppSetting::getValue('llm7_base_url', config('news.llm7_base_url', 'https://api.llm7.io/v1')),
+                'llm7_model' => AppSetting::getValue('llm7_model', config('news.llm7_model', 'default')),
                 'news_translation_provider' => AppSetting::getValue('news_translation_provider', config('news.translation_provider', 'gemini')),
                 'microsoft_translator_key' => AppSetting::getValue('microsoft_translator_key', config('news.microsoft_translator_key', '')),
                 'microsoft_translator_region' => AppSetting::getValue('microsoft_translator_region', config('news.microsoft_translator_region', '')),
@@ -103,13 +106,17 @@ class NewsAdminController extends Controller
             'news_in_fields' => ['nullable', 'string', 'max:120'],
             'gemini_api_key' => ['nullable', 'string', 'max:255'],
             'gemini_model' => ['required', 'string', 'max:80'],
-            'news_translation_provider' => ['required', Rule::in(['gemini', 'microsoft'])],
+            'llm7_api_key' => ['nullable', 'string', 'max:255'],
+            'llm7_base_url' => ['required', 'url', 'max:255'],
+            'llm7_model' => ['required', 'string', 'max:80'],
+            'news_translation_provider' => ['required', Rule::in(['gemini', 'llm7', 'microsoft'])],
             'microsoft_translator_key' => ['nullable', 'string', 'max:255'],
             'microsoft_translator_region' => ['nullable', 'string', 'max:80'],
             'microsoft_translator_endpoint' => ['required', 'url', 'max:255'],
         ], [], [
             'gnews_api_key' => 'کلید GNews',
             'gemini_api_key' => 'کلید Gemini',
+            'llm7_api_key' => 'کلید LLM7',
             'microsoft_translator_key' => 'کلید Microsoft Translator',
             'news_category_queries_json' => 'مپ جستجوی دسته‌بندی‌ها',
         ]);
@@ -133,11 +140,13 @@ class NewsAdminController extends Controller
         AppSetting::setValue('news_sort_by', $data['news_sort_by']);
         AppSetting::setValue('news_in_fields', $data['news_in_fields'] ?? 'title,description');
         AppSetting::setValue('gemini_model', $data['gemini_model']);
+        AppSetting::setValue('llm7_base_url', rtrim($data['llm7_base_url'], '/'));
+        AppSetting::setValue('llm7_model', $data['llm7_model']);
         AppSetting::setValue('news_translation_provider', $data['news_translation_provider']);
         AppSetting::setValue('microsoft_translator_region', $data['microsoft_translator_region'] ?? '');
         AppSetting::setValue('microsoft_translator_endpoint', rtrim($data['microsoft_translator_endpoint'], '/'));
 
-        foreach (['gnews_api_key', 'gemini_api_key', 'microsoft_translator_key'] as $secretKey) {
+        foreach (['gnews_api_key', 'gemini_api_key', 'llm7_api_key', 'microsoft_translator_key'] as $secretKey) {
             if (! empty($data[$secretKey])) {
                 AppSetting::setValue($secretKey, $data[$secretKey], true);
             }

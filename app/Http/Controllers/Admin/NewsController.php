@@ -7,6 +7,7 @@ use App\Models\NewsArticle;
 use App\Models\NewsCategory;
 use App\Models\NewsSyncLog;
 use App\Services\News\GeminiHeadlineTranslator;
+use App\Services\News\Llm7NewsTranslator;
 use App\Services\News\MicrosoftNewsTranslator;
 use App\Services\News\NewsSyncService;
 use Illuminate\Http\Request;
@@ -48,6 +49,21 @@ class NewsController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'تست اتصال Gemini ناموفق بود: '.$e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function testLlm7(Llm7NewsTranslator $translator)
+    {
+        try {
+            $sample = $translator->testConnection();
+
+            return response()->json([
+                'message' => 'LLM7 connection test succeeded. Sample translation: '.$sample,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'LLM7 connection test failed: '.$e->getMessage(),
             ], 422);
         }
     }
