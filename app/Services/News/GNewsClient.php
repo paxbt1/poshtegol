@@ -3,6 +3,7 @@
 namespace App\Services\News;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class GNewsClient
@@ -47,6 +48,15 @@ class GNewsClient
             ->get('/search', $params);
 
         if ($response->failed()) {
+            Log::warning('gnews request failed', [
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 1000),
+                'x-ratelimit-limit' => $response->header('X-RateLimit-Limit'),
+                'x-ratelimit-remaining' => $response->header('X-RateLimit-Remaining'),
+                'x-ratelimit-reset' => $response->header('X-RateLimit-Reset'),
+                'retry-after' => $response->header('Retry-After'),
+            ]);
+
             $message = match ($response->status()) {
                 401, 403 => 'دسترسی به GNews مجاز نیست. کلید API را بررسی کنید.',
                 429 => 'محدودیت درخواست GNews فعال شده است. بعداً دوباره تلاش کنید.',

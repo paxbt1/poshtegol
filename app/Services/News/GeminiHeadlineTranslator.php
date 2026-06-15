@@ -3,6 +3,7 @@
 namespace App\Services\News;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -71,7 +72,13 @@ class GeminiHeadlineTranslator
             ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('خطا در ارتباط با Gemini. وضعیت: '.$response->status());
+            Log::warning('gemini request failed', [
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 1000),
+                'retry-after' => $response->header('Retry-After'),
+                'model' => $model,
+            ]);
+            throw new RuntimeException('Ø®Ø·Ø§ Ø¯Ø± Ø§Ø±ØªØ¨Ø§Ø· Ø¨Ø§ Gemini. ÙˆØ¶Ø¹ÛŒØª: '.$response->status());
         }
 
         $text = trim((string) data_get($response->json(), 'candidates.0.content.parts.0.text'));
@@ -97,7 +104,7 @@ class GeminiHeadlineTranslator
         );
 
         if (empty($result['translated_title'])) {
-            throw new RuntimeException('اتصال برقرار شد اما پاسخ قابل استفاده‌ای از Gemini دریافت نشد.');
+            throw new RuntimeException('Ø§ØªØµØ§Ù„ Ø¨Ø±Ù‚Ø±Ø§Ø± Ø´Ø¯ Ø§Ù…Ø§ Ù¾Ø§Ø³Ø® Ù‚Ø§Ø¨Ù„ Ø§Ø³ØªÙØ§Ø¯Ù‡â€ŒØ§ÛŒ Ø§Ø² Gemini Ø¯Ø±ÛŒØ§ÙØª Ù†Ø´Ø¯.');
         }
 
         return $result['translated_title'];
@@ -115,7 +122,7 @@ class GeminiHeadlineTranslator
         }
 
         return [
-            'translated_title' => trim($text, " \t\n\r\0\x0B\"'`،"),
+            'translated_title' => trim($text, " \t\n\r\0\x0B\"'`ØŒ"),
             'translated_summary' => null,
             'translated_body' => null,
         ];
