@@ -1,0 +1,24 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: poshtegol/app:latest
+    container_name: poshtegol-app
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    ports:
+      - "${APP_PORT:-80}:80"
+    volumes:
+      - poshtegol_storage:/var/www/html/storage
+      - poshtegol_media:/var/www/html/public/media
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  poshtegol_storage:
+  poshtegol_media:
