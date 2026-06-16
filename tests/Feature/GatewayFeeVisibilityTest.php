@@ -15,66 +15,62 @@ class GatewayFeeVisibilityTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_prediction_amounts_do_not_add_gateway_fee_for_offline_payment(): void
+    public function test_prediction_preview_uses_selected_token_count_without_gateway_fee(): void
     {
         $user = User::factory()->create();
         $match = $this->match();
 
         $this->actingAs($user)
-            ->postJson(route('matches.prediction.preview', $match), [])
+            ->postJson(route('matches.prediction.preview', $match), ['stake_tokens' => 7])
             ->assertOk()
-            ->assertJsonPath('entry_amount', 50000)
-            ->assertJsonPath('payable_amount', 50000)
+            ->assertJsonPath('entry_amount', 7)
+            ->assertJsonPath('payable_amount', 7)
             ->assertJsonMissingPath('gateway_fee_amount');
     }
 
-    public function test_offline_payment_receipt_is_pending_until_admin_approval(): void
+    public function test_prediction_is_locked_immediately_with_token_transaction(): void
     {
         $user = User::factory()->create();
         $match = $this->match();
-        $entry = $this->entry($user, $match);
 
         $this->actingAs($user)
-            ->postJson(route('predictions.pay', $entry), [
-                'payer_card_number' => '6037991234567890',
-                'receipt_number' => 'RCPT-1001',
-            ])
-            ->assertOk();
+            ->postJson(route('matches.prediction.store', $match), $this->payload(['stake_tokens' => 12]))
+            ->assertOk()
+            ->assertJsonPath('entry_amount_label', '12 توکن');
 
+        $entry = PredictionEntry::firstOrFail();
         $transaction = PaymentTransaction::firstOrFail();
-        $this->assertSame('pending_review', $transaction->status);
-        $this->assertSame('pending_review', $entry->fresh()->payment_status);
-        $this->assertSame('6037991234567890', $transaction->request_payload['payer_card_number']);
-        $this->assertSame('RCPT-1001', $transaction->request_payload['receipt_number']);
+
+        $this->assertSame('paid', $entry->payment_status);
+        $this->assertSame('locked', $entry->prediction_status);
+        $this->assertSame(12, (int) $entry->entry_amount);
+        $this->assertSame('token', $transaction->gateway);
+        $this->assertSame('paid', $transaction->status);
+        $this->assertSame(12, (int) $transaction->amount);
+        $this->assertSame(12, (int) $transaction->request_payload['stake_tokens']);
     }
 
-    public function test_admin_approval_finalizes_offline_payment(): void
+    public function test_locked_token_prediction_cannot_be_changed(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
         $user = User::factory()->create();
         $match = $this->match();
-        $entry = $this->entry($user, $match, ['payment_status' => 'pending_review', 'prediction_status' => 'pending_review']);
+        $this->entry($user, $match, ['payment_status' => 'paid', 'prediction_status' => 'locked']);
 
-        $transaction = PaymentTransaction::create([
-            'user_id' => $user->id,
-            'prediction_entry_id' => $entry->id,
-            'gateway' => 'offline_card',
-            'amount' => 50000,
-            'amount_gateway' => 50000,
-            'entry_amount' => 50000,
-            'gateway_fee_amount' => 0,
-            'reference_id' => 'RCPT-1001',
-            'status' => 'pending_review',
-            'request_payload' => ['payer_card_number' => '6037991234567890', 'receipt_number' => 'RCPT-1001'],
-        ]);
+        $this->actingAs($user)
+            ->postJson(route('matches.prediction.store', $match), $this->payload())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('match');
+    }
 
-        $this->actingAs($admin)
-            ->postJson(route('admin.payment-transactions.approve', $transaction))
-            ->assertOk();
-
-        $this->assertSame('paid', $transaction->fresh()->status);
-        $this->assertSame('paid', $entry->fresh()->payment_status);
-        $this->assertSame('locked', $entry->fresh()->prediction_status);
+    private function payload(array $overrides = []): array
+    {
+        return array_merge([
+            'full_time_result' => 'home',
+            'exact_home_score' => 1,
+            'exact_away_score' => 0,
+            'total_goals_option' => 'under_2_5',
+            'stake_tokens' => 5,
+        ], $overrides);
     }
 
     private function entry(User $user, FootballMatch $match, array $overrides = []): PredictionEntry
@@ -83,9 +79,9 @@ class GatewayFeeVisibilityTest extends TestCase
             'user_id' => $user->id,
             'match_id' => $match->id,
             'period_id' => $match->period_id,
-            'entry_amount' => 50000,
+            'entry_amount' => 5,
             'gateway_fee_amount' => 0,
-            'payable_amount' => 50000,
+            'payable_amount' => 5,
             'full_time_result' => 'home',
             'exact_home_score' => 1,
             'exact_away_score' => 0,
@@ -110,7 +106,7 @@ class GatewayFeeVisibilityTest extends TestCase
             'status' => 'scheduled',
             'starts_at' => now()->addDay(),
             'prediction_locks_at' => now()->addDay()->subHour(),
-            'entry_amount' => 50000,
+            'entry_amount' => 1,
         ]);
     }
 }

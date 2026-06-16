@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\InviteLink;
 use App\Models\User;
-use App\Services\CardNumberService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -41,24 +40,17 @@ class AuthPasswordTest extends TestCase
             ->assertUnprocessable();
     }
 
-    public function test_duplicate_mobile_and_duplicate_card_are_rejected(): void
+    public function test_duplicate_mobile_is_rejected_and_card_is_not_required(): void
     {
         $invite = InviteLink::create(['code' => 'REG1', 'type' => InviteLink::TYPE_MASTER_ACCESS]);
-        $card = '4242424242424242';
-        $service = app(CardNumberService::class);
 
-        User::factory()->create([
-            'mobile' => '09121111111',
-            'card_number' => $card,
-            'card_hash' => $service->hash($card),
-        ]);
+        User::factory()->create(['mobile' => '09121111111']);
 
         $this->withSession($this->inviteSession($invite))
             ->postJson(route('auth.register'), [
                 'first_name' => 'کاربر',
                 'last_name' => 'تکراری',
                 'mobile' => '09121111111',
-                'card_number' => '5555555555554444',
                 'password' => 'password123',
                 'password_confirmation' => 'password123',
             ])
@@ -67,13 +59,12 @@ class AuthPasswordTest extends TestCase
         $this->withSession($this->inviteSession($invite))
             ->postJson(route('auth.register'), [
                 'first_name' => 'کاربر',
-                'last_name' => 'تکراری',
+                'last_name' => 'جدید',
                 'mobile' => '09121111112',
-                'card_number' => $card,
                 'password' => 'password123',
                 'password_confirmation' => 'password123',
             ])
-            ->assertJsonValidationErrors('card_number');
+            ->assertOk();
     }
 
     private function inviteSession(InviteLink $invite): array

@@ -20,8 +20,8 @@
         <x-ui.card>
             <strong>خلاصه زنده</strong>
             <div class="summary-row"><span>بازی‌های زنده</span><strong>{{ $liveMatchesCount }}</strong></div>
-            <div class="summary-row"><span>سهم احتمالی از صندوق</span><strong>{{ number_format($activePeriodResult?->reward_amount ?? 0) }} تومان</strong></div>
-            <div class="summary-row"><span>پاداش دعوت</span><strong>{{ number_format($activePeriodResult?->referral_bonus_amount ?? 0) }} تومان</strong></div>
+            <div class="summary-row"><span>سهم احتمالی از صندوق</span><strong>{{ number_format($activePeriodResult?->reward_amount ?? 0) }} توکن</strong></div>
+            <div class="summary-row"><span>پاداش دعوت</span><strong>{{ number_format($activePeriodResult?->referral_bonus_amount ?? 0) }} توکن</strong></div>
         </x-ui.card>
 
         <h2 class="section-title">بازی‌های امروز</h2>
@@ -37,8 +37,8 @@
         </div>
 
         <div class="grid desktop-grid-3" style="margin-top:16px;">
-            <x-ui.card><strong>وضعیت من</strong><p class="muted">پروفایل شما فعال است و می‌توانید تا یک ساعت قبل از شروع هر بازی پیش‌بینی ثبت کنید.</p></x-ui.card>
-            <x-ui.card><strong>پیش‌بینی‌های من</strong><p class="muted">{{ $paidPredictions->count() }} پیش‌بینی پرداخت‌شده و قفل‌شده دارید.</p></x-ui.card>
+            <x-ui.card><strong>وضعیت من</strong><p class="muted">پروفایل شما فعال است و می‌توانید تا زمان قفل هر بازی پیش‌بینی ثبت کنید.</p></x-ui.card>
+            <x-ui.card><strong>پیش‌بینی‌های من</strong><p class="muted">{{ $paidPredictions->count() }} پیش‌بینی توکنی ثبت و قفل‌شده دارید.</p></x-ui.card>
             <x-ui.card><strong>رتبه‌بندی خانوادگی</strong><p class="muted">جدول امتیازها پس از پایان بازی‌ها و محاسبه نتایج به‌روزرسانی می‌شود.</p></x-ui.card>
         </div>
 
@@ -49,7 +49,7 @@
             <button class="btn btn-soft" data-copy="{{ route('join', auth()->user()->invite_code) }}">کپی لینک دعوت</button>
         </x-ui.card>
 
-        <h2 class="section-title">پیش‌بینی‌های پرداخت‌شده</h2>
+        <h2 class="section-title">پیش‌بینی‌های توکنی</h2>
         <div class="grid">
             @forelse($paidPredictions as $entry)
                 @php
@@ -58,14 +58,12 @@
                 @endphp
                 <x-ui.card>
                     <strong>{{ $home }} - {{ $away }}</strong>
-                    <p class="muted">نتیجه دقیق: {{ $entry->exact_home_score }} - {{ $entry->exact_away_score }} / مبلغ ثبت‌شده: {{ number_format($entry->entry_amount) }} تومان</p>
+                    <p class="muted">نتیجه دقیق: {{ $entry->exact_home_score }} - {{ $entry->exact_away_score }} / توکن شرط: {{ number_format($entry->entry_amount) }} توکن</p>
                 </x-ui.card>
             @empty
-                <x-ui.card><p class="muted">هنوز پیش‌بینی پرداخت‌شده‌ای ندارید.</p></x-ui.card>
+                <x-ui.card><p class="muted">هنوز پیش‌بینی توکنی ندارید.</p></x-ui.card>
             @endforelse
         </div>
     </main>
-
-
 </div>
 @endsection

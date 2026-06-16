@@ -1,7 +1,9 @@
 @extends('layouts.admin')
 
 @section('content')
-<h1 class="title">رسیدهای پرداخت کارت به کارت</h1>
+<h1 class="title">تعهدهای توکنی</h1>
+<p class="muted" style="line-height:1.8;margin-top:8px;">هر ردیف یک پیش‌بینی ثبت‌شده با توکن است. پرداخت بانکی در این مرحله انجام نمی‌شود و تسویه نهایی بعد از پایان جام محاسبه خواهد شد.</p>
+
 <x-ui.card style="margin-top:16px;">
     <div class="table-wrap">
         <table class="table">
@@ -9,57 +11,35 @@
                 <tr>
                     <th>کاربر</th>
                     <th>بازی</th>
-                    <th>مبلغ</th>
-                    <th>کارت مقصد</th>
-                    <th>کارت واریزکننده</th>
-                    <th>شماره رسید</th>
+                    <th>توکن شرط</th>
                     <th>وضعیت</th>
+                    <th>شناسه داخلی</th>
                     <th>زمان ثبت</th>
-                    <th>عملیات</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($transactions as $transaction)
                     @php
-                        $payload = $transaction->request_payload ?? [];
                         $match = $transaction->predictionEntry?->match;
                         $home = $match?->homeTeam?->name_fa ?? $match?->bracket_slot_home ?? 'تیم میزبان';
                         $away = $match?->awayTeam?->name_fa ?? $match?->bracket_slot_away ?? 'تیم مهمان';
                         $labels = [
-                            'pending_review' => 'در انتظار تایید',
-                            'paid' => 'تایید شده',
-                            'failed' => 'رد شده',
-                            'cancelled' => 'لغو شده',
+                            'paid' => 'ثبت‌شده',
+                            'failed' => 'ناموفق',
+                            'cancelled' => 'لغوشده',
+                            'pending_review' => 'در انتظار بررسی',
                         ];
                     @endphp
                     <tr>
                         <td>{{ $transaction->user->full_name }}</td>
                         <td>{{ $home }} - {{ $away }}</td>
-                        <td>{{ number_format($transaction->amount) }} تومان</td>
-                        <td dir="ltr">{{ $payload['destination_card_number'] ?? '-' }}</td>
-                        <td dir="ltr">{{ $payload['payer_card_number'] ?? '-' }}</td>
-                        <td dir="ltr">{{ $payload['receipt_number'] ?? $transaction->reference_id ?? '-' }}</td>
+                        <td>{{ number_format($transaction->amount) }} توکن</td>
                         <td>{{ $labels[$transaction->status] ?? $transaction->status }}</td>
+                        <td dir="ltr">{{ $transaction->reference_id ?? '-' }}</td>
                         <td>{{ \App\Support\Jalali::format($transaction->created_at, 'Y/m/d H:i') }}</td>
-                        <td>
-                            @if($transaction->status === 'pending_review')
-                                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                    <form data-ajax method="POST" action="{{ route('admin.payment-transactions.approve', $transaction) }}">
-                                        @csrf
-                                        <button class="btn btn-primary" type="submit">تایید</button>
-                                    </form>
-                                    <form data-ajax method="POST" action="{{ route('admin.payment-transactions.reject', $transaction) }}">
-                                        @csrf
-                                        <button class="btn btn-outline" type="submit">رد</button>
-                                    </form>
-                                </div>
-                            @else
-                                -
-                            @endif
-                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="9">رسیدی ثبت نشده است.</td></tr>
+                    <tr><td colspan="6">تعهد توکنی ثبت نشده است.</td></tr>
                 @endforelse
             </tbody>
         </table>

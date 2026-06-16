@@ -16,7 +16,7 @@
                 <a href="{{ route('admin.matches') }}">بازی‌ها</a>
                 <a href="{{ route('admin.users') }}">کاربران</a>
                 <a href="{{ route('admin.predictions') }}">پیش‌بینی‌ها</a>
-                <a href="{{ route('admin.payments') }}">پرداخت‌ها</a>
+                <a href="{{ route('admin.payments') }}">تعهدهای توکنی</a>
                 <a href="{{ route('admin.referrals') }}">دعوت‌ها</a>
                 <a href="{{ route('admin.settings.finance') }}">مالی کاپ</a>
                 <a href="{{ route('admin.finance.report') }}">گزارش مالی</a>

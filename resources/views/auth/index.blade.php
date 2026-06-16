@@ -7,9 +7,9 @@
     <h1 class="title" style="margin-top:14px;">{{ $canRegister ? 'دعوت‌نامه معتبر است' : 'ورود به پنل مدیریت' }}</h1>
     <p class="muted" style="line-height:1.9;">
         @if($canRegister)
-            برای ورود یا عضویت، اطلاعات حساب خود را وارد کنید. شماره کارت فقط برای تسویه جوایز در پایان دوره‌ها دریافت می‌شود.
+            برای ورود یا عضویت، اطلاعات حساب خود را وارد کنید. ثبت پیش‌بینی با توکن انجام می‌شود و هیچ اطلاعات کارت بانکی در ثبت‌نام دریافت نمی‌شود.
         @else
-            اگر مدیر سایت خبری یا کاپ هستید با شماره موبایل و رمز عبور تعریف‌شده در فایل .env وارد شوید. عضویت کاربران فقط با لینک دعوت مادر فعال می‌شود.
+            اگر مدیر سایت خبری یا کاپ هستید با شماره موبایل و رمز عبور تعریف‌شده وارد شوید. عضویت کاربران فقط با لینک دعوت فعال می‌شود.
         @endif
     </p>
 
@@ -57,11 +57,6 @@
                     <label>شماره موبایل</label>
                     <input class="input" name="mobile" inputmode="tel" autocomplete="username" placeholder="09123456789">
                     <div class="form-error" data-error-for="mobile"></div>
-                </div>
-                <div class="field">
-                    <label>شماره کارت</label>
-                    <input class="input" name="card_number" inputmode="numeric" autocomplete="off" placeholder="۱۶ رقم">
-                    <div class="form-error" data-error-for="card_number"></div>
                 </div>
                 <div class="grid grid-2">
                     <div class="field">

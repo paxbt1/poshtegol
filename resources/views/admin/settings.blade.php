@@ -225,17 +225,9 @@
     </x-ui.card>
 
     <x-ui.card>
-        <h2 class="section-title" style="margin-top:0;">تنظیمات پرداخت کارت به کارت</h2>
-        <form data-ajax method="POST" action="{{ route('admin.settings.payment-gateway.update') }}">
-            @csrf
-            <div class="field">
-                <label>شماره کارت مقصد</label>
-                <input class="input" dir="ltr" name="offline_payment_card_number" value="{{ $settings['offline_payment_card_number'] }}" inputmode="numeric" maxlength="16" required>
-                <div class="form-error" data-error-for="offline_payment_card_number"></div>
-            </div>
-            <p class="muted small" style="line-height:1.8;">این شماره کارت در فرم پرداخت کاربران نمایش داده می‌شود. پرداخت‌ها بعد از ثبت رسید در وضعیت «در انتظار تایید» می‌مانند.</p>
-            <button class="btn btn-primary w-full" type="submit" style="margin-top:16px;">ذخیره تنظیمات پرداخت</button>
-        </form>
+        <h2 class="section-title" style="margin-top:0;">مدل پرداخت توکنی</h2>
+        <p class="muted" style="line-height:1.9;">درگاه آنلاین و پرداخت کارت به کارت از مسیر پیش‌بینی حذف شده است. کاربر هنگام ثبت پیش‌بینی تعداد توکن را مشخص می‌کند و تسویه ریالی بعد از پایان جام بر اساس خالص توکن بدهکار یا بستانکار انجام می‌شود.</p>
+        <a class="btn btn-primary w-full" href="{{ route('admin.settings.finance') }}" style="margin-top:16px;">تنظیمات توکن‌ها</a>
     </x-ui.card>
 </div>
 

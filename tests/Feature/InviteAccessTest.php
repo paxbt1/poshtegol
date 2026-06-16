@@ -13,22 +13,20 @@ class InviteAccessTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_root_uses_configured_unauthorized_redirect(): void
+    public function test_guest_root_shows_public_homepage_by_default(): void
     {
-        $this->get('/')->assertRedirect('https://www.varzesh3.com');
+        $this->get('/')->assertOk();
     }
 
-    public function test_unauthorized_mode_can_return_404(): void
+    public function test_auth_page_is_available_for_login_context(): void
     {
-        AppSetting::create(['key' => 'unauthorized_access_mode', 'value' => '404']);
-
-        $this->getJson('/auth')->assertNotFound();
-        $this->getJson('/join/invalid-code')->assertNotFound();
+        $this->getJson('/auth')->assertOk();
+        $this->getJson('/join/invalid-code')->assertOk();
     }
 
-    public function test_auth_without_invite_context_redirects_away(): void
+    public function test_auth_without_invite_context_still_shows_login_page(): void
     {
-        $this->get('/auth')->assertRedirect('https://www.varzesh3.com');
+        $this->get('/auth')->assertOk();
     }
 
     public function test_valid_master_access_link_stores_context_without_incrementing_usage(): void
@@ -49,9 +47,9 @@ class InviteAccessTest extends TestCase
         InviteLink::create(['code' => 'OLD', 'type' => InviteLink::TYPE_MASTER_ACCESS, 'expires_at' => now()->subMinute()]);
         InviteLink::create(['code' => 'FULL', 'type' => InviteLink::TYPE_MASTER_ACCESS, 'max_uses' => 1, 'used_count' => 1]);
 
-        $this->get('/join/OFF')->assertRedirect('https://www.varzesh3.com');
-        $this->get('/join/OLD')->assertRedirect('https://www.varzesh3.com');
-        $this->get('/join/FULL')->assertRedirect('https://www.varzesh3.com');
+        $this->get('/join/OFF')->assertOk();
+        $this->get('/join/OLD')->assertOk();
+        $this->get('/join/FULL')->assertOk();
     }
 
     public function test_registration_through_master_access_has_no_referrer(): void
@@ -59,7 +57,7 @@ class InviteAccessTest extends TestCase
         $invite = InviteLink::create(['code' => 'MASTER2', 'type' => InviteLink::TYPE_MASTER_ACCESS, 'title' => 'ورود مادر']);
 
         $this->withSession($this->inviteSession($invite))
-            ->postJson(route('auth.register'), $this->registrationPayload('09125550000', '4242424242424242'))
+            ->postJson(route('auth.register'), $this->registrationPayload('09125550000'))
             ->assertOk();
 
         $user = User::where('mobile', '09125550000')->firstOrFail();
@@ -88,7 +86,7 @@ class InviteAccessTest extends TestCase
             ->assertSessionHas('invite_earns_commission', true);
 
         $this->withSession($this->inviteSession($invite))
-            ->postJson(route('auth.register'), $this->registrationPayload('09125550001', '5555555555554444'))
+            ->postJson(route('auth.register'), $this->registrationPayload('09125550001'))
             ->assertOk();
 
         $user = User::where('mobile', '09125550001')->firstOrFail();
@@ -107,6 +105,9 @@ class InviteAccessTest extends TestCase
 
     public function test_logout_redirects_to_configured_unauthorized_destination(): void
     {
+        AppSetting::setValue('unauthorized_access_mode', 'redirect');
+        AppSetting::setValue('unauthorized_redirect_url', 'https://www.varzesh3.com');
+
         $this->actingAs(User::factory()->create())
             ->post(route('logout'))
             ->assertRedirect('https://www.varzesh3.com');
@@ -123,13 +124,12 @@ class InviteAccessTest extends TestCase
         ];
     }
 
-    private function registrationPayload(string $mobile, string $card): array
+    private function registrationPayload(string $mobile): array
     {
         return [
             'first_name' => 'کاربر',
             'last_name' => 'تست',
             'mobile' => $mobile,
-            'card_number' => $card,
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];

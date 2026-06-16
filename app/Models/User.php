@@ -19,9 +19,6 @@ class User extends Authenticatable
         'last_name',
         'mobile',
         'password',
-        'card_number',
-        'card_hash',
-        'card_last4',
         'invite_code',
         'invited_by_user_id',
         'registered_via_invite_code',
@@ -34,15 +31,12 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
-        'card_number',
-        'card_hash',
     ];
 
     protected function casts(): array
     {
         return [
             'password' => 'hashed',
-            'card_number' => 'encrypted',
             'is_admin' => 'boolean',
             'is_active' => 'boolean',
             'mobile_verified_at' => 'datetime',

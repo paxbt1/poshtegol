@@ -16,7 +16,6 @@ use App\Http\Controllers\JoinController;
 use App\Http\Controllers\LiveController;
 use App\Http\Controllers\MatchController;
 use App\Http\Controllers\NewsController as UserNewsController;
-use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\PredictionController;
 use App\Http\Controllers\RankingController;
@@ -36,7 +35,6 @@ Route::get('/search', [PublicSiteController::class, 'search'])->name('public.sea
 Route::get('/cup', [PublicSiteController::class, 'cup'])->name('public.cup');
 
 Route::get('/join/{code}', JoinController::class)->name('join');
-Route::get('/payment/callback/zibal', fn () => abort(404))->name('payment.callback.zibal');
 Route::get('/auth', [AuthController::class, 'show'])->name('login');
 Route::post('/auth/login', [AuthController::class, 'login'])->name('auth.login');
 
@@ -55,10 +53,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/dashboard/live-summary', [LiveController::class, 'dashboardSummary'])->name('api.dashboard.live-summary');
     Route::get('/ranking/period/{period}', [ApiPeriodController::class, 'ranking'])->name('ranking.period');
     Route::get('/settlements/period/{period}', [ApiPeriodController::class, 'settlement'])->name('settlements.period');
-    Route::get('/payment/result/{transaction}', [PaymentController::class, 'result'])->name('payment.result');
     Route::post('/matches/{match}/prediction/preview', [PredictionController::class, 'preview'])->name('matches.prediction.preview');
     Route::post('/matches/{match}/prediction', [PredictionController::class, 'store'])->name('matches.prediction.store');
-    Route::post('/predictions/{entry}/pay', [PaymentController::class, 'pay'])->name('predictions.pay');
     Route::get('/ranking', [RankingController::class, 'index'])->name('ranking');
     Route::get('/settlements', [RankingController::class, 'settlements'])->name('settlements');
     Route::get('/invite', [InviteController::class, 'index'])->name('invite');
@@ -102,8 +98,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
     Route::get('/predictions', [AdminController::class, 'page'])->defaults('page', 'predictions')->name('predictions');
     Route::get('/payments', [AdminController::class, 'page'])->defaults('page', 'payments')->name('payments');
-    Route::post('/payment-transactions/{transaction}/approve', [AdminController::class, 'approvePayment'])->name('payment-transactions.approve');
-    Route::post('/payment-transactions/{transaction}/reject', [AdminController::class, 'rejectPayment'])->name('payment-transactions.reject');
     Route::get('/settlements', [AdminController::class, 'page'])->defaults('page', 'settlements')->name('settlements');
     Route::get('/settlements/{period}', [SettlementController::class, 'show'])->name('settlements.show');
     Route::post('/settlements/{period}/calculate', [SettlementController::class, 'calculate'])->name('settlements.calculate');
@@ -137,7 +131,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/settings/general', [AdminController::class, 'updateGeneralSettings'])->name('settings.general.update');
     Route::post('/settings/football-data', [AdminController::class, 'updateFootballDataSettings'])->name('settings.football-data.update');
     Route::post('/settings/news', [AdminController::class, 'updateNewsSettings'])->name('settings.news.update');
-    Route::post('/settings/payment-gateway', [AdminController::class, 'updatePaymentGatewaySettings'])->name('settings.payment-gateway.update');
     Route::get('/settings/finance', [AdminController::class, 'finance'])->name('settings.finance');
     Route::post('/settings/finance', [AdminController::class, 'updateFinance'])->name('settings.finance.update');
 });

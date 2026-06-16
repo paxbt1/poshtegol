@@ -50,7 +50,7 @@ class MatchController extends Controller
             'awayTeam',
             'period',
             'predictionEntries' => fn ($query) => $query
-                ->whereIn('payment_status', ['paid', 'paid_but_locked', 'pending_review'])
+                ->whereIn('payment_status', ['paid', 'paid_but_locked'])
                 ->with(['user', 'result'])
                 ->latest('paid_at'),
         ]);

@@ -3,25 +3,26 @@
 namespace App\Services;
 
 use App\Models\FootballMatch;
+use App\Models\PaymentTransaction;
 use App\Models\PredictionEntry;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PredictionService
 {
     public function __construct(
         private readonly MatchLockService $lockService,
-        private readonly PaymentAmountService $amountService,
     ) {}
 
-    public function calculateAmounts(FootballMatch $match): array
+    public function calculateAmounts(FootballMatch $match, ?int $stakeTokens = null): array
     {
-        $entryAmount = (int) ($match->entry_amount ?: 50000);
+        $tokens = max(1, (int) ($stakeTokens ?: 1));
 
         return [
-            'entry_amount' => $entryAmount,
+            'entry_amount' => $tokens,
             'gateway_fee_amount' => 0,
-            'payable_amount' => $entryAmount,
+            'payable_amount' => $tokens,
         ];
     }
 
@@ -32,28 +33,67 @@ class PredictionService
         }
 
         if ($this->paidEntry($user, $match)) {
-            throw ValidationException::withMessages(['match' => 'پیش‌بینی پرداخت‌شده قابل تغییر نیست.']);
+            throw ValidationException::withMessages(['match' => 'این پیش‌بینی ثبت و قفل شده و قابل تغییر نیست.']);
         }
 
-        $amounts = $this->calculateAmounts($match);
+        $tokens = max(1, (int) ($data['stake_tokens'] ?? 1));
+        $amounts = $this->calculateAmounts($match, $tokens);
 
-        return PredictionEntry::updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'match_id' => $match->id,
-                'payment_status' => 'unpaid',
-            ],
-            array_merge($amounts, [
+        return DB::transaction(function () use ($user, $match, $data, $tokens, $amounts) {
+            $entry = PredictionEntry::query()
+                ->where('user_id', $user->id)
+                ->where('match_id', $match->id)
+                ->whereIn('payment_status', ['unpaid', 'pending', 'pending_review', 'failed', 'cancelled'])
+                ->latest('id')
+                ->first() ?? new PredictionEntry([
+                    'user_id' => $user->id,
+                    'match_id' => $match->id,
+                ]);
+
+            $entry->fill(array_merge($amounts, [
                 'period_id' => $match->period_id,
                 'full_time_result' => $data['full_time_result'],
                 'exact_home_score' => $data['exact_home_score'],
                 'exact_away_score' => $data['exact_away_score'],
                 'total_goals_option' => $data['total_goals_option'],
                 'qualified_team_id' => $data['qualified_team_id'] ?? null,
-                'prediction_status' => 'draft',
+                'payment_status' => 'paid',
+                'prediction_status' => 'locked',
+                'paid_at' => now(),
+                'locked_at' => now(),
                 'cancelled_at' => null,
-            ]),
-        );
+            ]));
+            $entry->save();
+
+            PaymentTransaction::updateOrCreate(
+                [
+                    'prediction_entry_id' => $entry->id,
+                    'gateway' => 'token',
+                ],
+                [
+                    'user_id' => $user->id,
+                    'amount' => $tokens,
+                    'amount_gateway' => $tokens,
+                    'entry_amount' => $tokens,
+                    'gateway_fee_amount' => 0,
+                    'transaction_id' => 'token-'.$entry->id,
+                    'reference_id' => 'token-'.$entry->id,
+                    'status' => 'paid',
+                    'request_payload' => ['stake_tokens' => $tokens],
+                    'callback_payload' => null,
+                    'paid_at' => now(),
+                    'verified_at' => now(),
+                ],
+            );
+
+            PredictionEntry::where('user_id', $entry->user_id)
+                ->where('match_id', $entry->match_id)
+                ->where('id', '!=', $entry->id)
+                ->whereIn('payment_status', ['unpaid', 'pending', 'pending_review', 'failed'])
+                ->update(['payment_status' => 'cancelled', 'prediction_status' => 'cancelled', 'cancelled_at' => now()]);
+
+            return $entry->refresh();
+        });
     }
 
     public function finalizeAfterPayment(PredictionEntry $entry): PredictionEntry
@@ -65,12 +105,6 @@ class PredictionService
             'locked_at' => now(),
         ]);
 
-        PredictionEntry::where('user_id', $entry->user_id)
-            ->where('match_id', $entry->match_id)
-            ->where('id', '!=', $entry->id)
-            ->whereIn('payment_status', ['unpaid', 'pending', 'pending_review', 'failed'])
-            ->update(['payment_status' => 'cancelled', 'prediction_status' => 'cancelled', 'cancelled_at' => now()]);
-
         return $entry->refresh();
     }
 
@@ -78,7 +112,7 @@ class PredictionService
     {
         return PredictionEntry::where('user_id', $user->id)
             ->where('match_id', $match->id)
-            ->whereIn('payment_status', ['paid', 'needs_review', 'paid_but_locked', 'pending_review'])
+            ->whereIn('payment_status', ['paid', 'needs_review', 'paid_but_locked'])
             ->first();
     }
 }

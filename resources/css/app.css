@@ -270,6 +270,39 @@ button, input, select { font: inherit; }
     display: block;
 }
 .versus { color: var(--muted); font-weight: 900; }
+.final-score-pill {
+    min-width: 76px;
+    min-height: 46px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: inline-grid;
+    place-items: center;
+    background: var(--navy);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 950;
+    direction: ltr;
+    box-shadow: 0 12px 28px rgba(7, 27, 51, .16);
+}
+.final-score-pill.light {
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.22);
+}
+.match-result-line {
+    border: 1px solid rgba(15, 122, 60, .20);
+    background: rgba(15, 122, 60, .08);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--green);
+    font-weight: 900;
+    text-align: center;
+}
+.match-result-line.light {
+    border-color: rgba(255,255,255,.18);
+    background: rgba(255,255,255,.11);
+    color: #fff;
+    margin-top: 16px;
+}
 .badge {
     display: inline-flex;
     align-items: center;
@@ -379,18 +412,28 @@ button, input, select { font: inherit; }
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     margin-top: 10px;
+    direction: rtl;
 }
 .countdown-item {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: #f8fafc;
+    position: relative;
+    border: 1px solid rgba(15, 122, 60, .16);
+    border-radius: 999px;
+    background:
+        radial-gradient(circle at center, #fff 0 58%, transparent 59%),
+        conic-gradient(from 0deg, rgba(15,122,60,.18), rgba(244,185,66,.18), rgba(15,122,60,.18));
     padding: 8px 6px;
     text-align: center;
+    aspect-ratio: 1;
+    min-width: 0;
+    display: grid;
+    place-items: center;
+    align-content: center;
 }
+.countdown-item.single { grid-column: 1 / -1; aspect-ratio: auto; min-height: 74px; border-radius: 6px; }
 .countdown-item strong {
     display: block;
     color: var(--navy);
-    font-size: 16px;
+    font-size: 17px;
     line-height: 1.2;
 }
 .countdown-item span {
@@ -411,11 +454,53 @@ button, input, select { font: inherit; }
     font-size: 12px;
 }
 .hero-card .countdown-item {
-    background: rgba(255,255,255,.12);
+    background:
+        radial-gradient(circle at center, rgba(255,255,255,.18) 0 58%, transparent 59%),
+        conic-gradient(from 0deg, rgba(255,255,255,.24), rgba(244,185,66,.28), rgba(255,255,255,.20));
     border-color: rgba(255,255,255,.18);
 }
 .hero-card .countdown-item strong,
 .hero-card .countdown-item span { color: #fff; }
+.token-stake-panel {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 14px;
+    border: 1px solid rgba(15, 122, 60, .22);
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(15,122,60,.08), rgba(244,185,66,.08));
+}
+.token-stake-panel label {
+    display: block;
+    color: var(--navy);
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+.token-input-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+}
+.token-input-wrap input {
+    text-align: center;
+    font-weight: 950;
+    font-size: 18px;
+}
+.token-input-wrap span {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: 6px;
+    background: var(--navy);
+    color: #fff;
+    font-weight: 900;
+}
+.token-summary {
+    margin-top: 0;
+    padding-top: 8px;
+}
 .toggle-row {
     display: flex;
     align-items: center;

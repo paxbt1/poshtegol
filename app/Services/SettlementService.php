@@ -40,12 +40,14 @@ class SettlementService
                 $totalReward += $reward;
                 $row->update([
                     'reward_amount' => $reward,
-                    'final_settlement_amount' => $reward + $row->referral_bonus_amount,
+                    'referral_bonus_amount' => 0,
+                    'final_settlement_amount' => 0,
                     'settlement_status' => $dryRun ? 'calculated' : 'finalized',
                 ]);
             }
 
             $totalReferral = $this->calculateReferralBonuses($period, ! $dryRun);
+            $this->applyTokenSettlementStatuses($period, $dryRun);
             $totalFinalReward = (int) UserPeriodResult::where('period_id', $period->id)->sum('reward_amount');
 
             $settlement = PeriodSettlement::updateOrCreate(
@@ -140,10 +142,26 @@ class SettlementService
 
             $inviterResult = UserPeriodResult::firstOrCreate(['period_id' => $period->id, 'user_id' => $relation->inviter_user_id]);
             $inviterResult->increment('referral_bonus_amount', $amount);
-            $inviterResult->update(['final_settlement_amount' => $inviterResult->reward_amount + $inviterResult->referral_bonus_amount]);
         }
 
         return $total;
+    }
+
+    private function applyTokenSettlementStatuses(SettlementPeriod $period, bool $dryRun): void
+    {
+        UserPeriodResult::where('period_id', $period->id)->get()->each(function (UserPeriodResult $row) use ($dryRun) {
+            $net = (int) $row->reward_amount + (int) $row->referral_bonus_amount - (int) $row->total_entry_amount;
+            $side = match (true) {
+                $net > 0 => 'creditor',
+                $net < 0 => 'debtor',
+                default => 'balanced',
+            };
+
+            $row->update([
+                'final_settlement_amount' => abs($net),
+                'settlement_status' => ($dryRun ? 'calculated_' : 'finalized_').$side,
+            ]);
+        });
     }
 
     private function writeLedgers(SettlementPeriod $period): void
@@ -151,8 +169,7 @@ class SettlementService
         FinancialLedger::where('period_id', $period->id)->delete();
 
         PaymentTransaction::whereHas('predictionEntry', fn ($q) => $q->where('period_id', $period->id))->where('status', 'paid')->each(function ($transaction) use ($period) {
-            FinancialLedger::create(['user_id' => $transaction->user_id, 'period_id' => $period->id, 'source_type' => PaymentTransaction::class, 'source_id' => $transaction->id, 'type' => 'entry_pool', 'direction' => 'credit', 'amount' => $transaction->entry_amount, 'description' => 'ورودی صندوق']);
-            FinancialLedger::create(['user_id' => $transaction->user_id, 'period_id' => $period->id, 'source_type' => PaymentTransaction::class, 'source_id' => $transaction->id, 'type' => 'gateway_fee', 'direction' => 'credit', 'amount' => $transaction->gateway_fee_amount, 'description' => 'کارمزد درگاه']);
+            FinancialLedger::create(['user_id' => $transaction->user_id, 'period_id' => $period->id, 'source_type' => PaymentTransaction::class, 'source_id' => $transaction->id, 'type' => 'token_stake', 'direction' => 'debit', 'amount' => $transaction->entry_amount, 'description' => 'تعهد توکنی شرط']);
         });
     }
 }

@@ -18,6 +18,7 @@ window.toast = (message, type = 'info') => {
 };
 
 window.formatMoney = (amount) => new Intl.NumberFormat('fa-IR').format(Number(amount || 0)) + ' تومان';
+window.formatTokens = (amount) => new Intl.NumberFormat('fa-IR').format(Number(amount || 0)) + ' توکن';
 
 const clearErrors = (form) => {
     form.querySelectorAll('[data-error-for]').forEach((el) => {
@@ -109,8 +110,6 @@ if (predictionForm) {
     const previewUrl = predictionForm.dataset.previewUrl;
     const entryLabel = document.querySelector('[data-entry-amount]');
     const payableLabel = document.querySelector('[data-payable-amount]');
-    const payForm = document.querySelector('[data-pay-form]');
-    const payButton = document.querySelector('[data-pay-button]');
 
     const preview = async () => {
         const response = await fetch(previewUrl, {
@@ -119,21 +118,13 @@ if (predictionForm) {
             body: new FormData(predictionForm),
         });
         const data = await response.json();
-        if (entryLabel) entryLabel.textContent = data.entry_amount_label || window.formatMoney(data.entry_amount);
-        if (payableLabel) payableLabel.textContent = data.payable_amount_label || window.formatMoney(data.payable_amount);
+        if (entryLabel) entryLabel.textContent = data.entry_amount_label || window.formatTokens(data.entry_amount);
+        if (payableLabel) payableLabel.textContent = data.payable_amount_label || window.formatTokens(data.payable_amount);
     };
 
     predictionForm.querySelectorAll('input, select').forEach((field) => field.addEventListener('change', preview));
+    predictionForm.querySelectorAll('input[type="number"]').forEach((field) => field.addEventListener('input', preview));
     preview();
-
-    predictionForm.addEventListener('ajax:success', (event) => {
-        if (payForm && event.detail.pay_url) {
-            payForm.action = event.detail.pay_url;
-            payForm.classList.remove('hidden');
-            payButton?.removeAttribute('disabled');
-            payForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    });
 }
 
 const liveRoom = document.querySelector('[data-live-room]');
@@ -180,7 +171,7 @@ const updateCountdowns = () => {
             if (box.dataset.mode === 'compact') {
                 box.textContent = 'شروع شده یا پایان یافته';
             } else {
-                box.innerHTML = '<div class="countdown-item"><strong>شروع</strong><span>بازی آغاز شده</span></div>';
+                box.innerHTML = '<div class="countdown-item single"><strong>شروع</strong><span>بازی آغاز شده</span></div>';
             }
             return;
         }
@@ -192,15 +183,15 @@ const updateCountdowns = () => {
         const seconds = totalSeconds % 60;
 
         if (box.dataset.mode === 'compact') {
-            box.textContent = `${toPersianNumber(days)} روز، ${toPersianNumber(hours)} ساعت، ${toPersianNumber(minutes)} دقیقه، ${toPersianNumber(seconds)} ثانیه`;
+            box.textContent = `${toPersianNumber(days)} روز | ${toPersianNumber(hours).padStart(2, '۰')}:${toPersianNumber(minutes).padStart(2, '۰')}:${toPersianNumber(seconds).padStart(2, '۰')}`;
             return;
         }
 
         box.innerHTML = `
-            <div class="countdown-item"><strong>${toPersianNumber(days)}</strong><span>روز</span></div>
-            <div class="countdown-item"><strong>${toPersianNumber(hours)}</strong><span>ساعت</span></div>
-            <div class="countdown-item"><strong>${toPersianNumber(minutes)}</strong><span>دقیقه</span></div>
             <div class="countdown-item"><strong>${toPersianNumber(seconds)}</strong><span>ثانیه</span></div>
+            <div class="countdown-item"><strong>${toPersianNumber(minutes)}</strong><span>دقیقه</span></div>
+            <div class="countdown-item"><strong>${toPersianNumber(hours)}</strong><span>ساعت</span></div>
+            <div class="countdown-item"><strong>${toPersianNumber(days)}</strong><span>روز</span></div>
         `;
     });
 };

@@ -36,15 +36,15 @@
     <div class="grid">
         <x-ui.card>
             <strong>خلاصه من</strong>
-            <div class="summary-row"><span>مبلغ شرکت در بازی‌ها</span><strong>{{ number_format($myResult?->total_entry_amount ?? 0) }} تومان</strong></div>
+            <div class="summary-row"><span>توکن‌های شرط‌بسته‌شده</span><strong>{{ number_format($myResult?->total_entry_amount ?? 0) }} توکن</strong></div>
             <div class="summary-row"><span>امتیاز کل</span><strong>{{ $myResult?->total_points ?? 0 }}</strong></div>
             <div class="summary-row"><span>رتبه شما</span><strong>{{ $myResult?->rank ?? '-' }}</strong></div>
-            <div class="summary-row"><span>سهم شما از صندوق</span><strong>{{ number_format($myResult?->reward_amount ?? 0) }} تومان</strong></div>
-            <div class="summary-row"><span>پاداش دعوت</span><strong>{{ number_format($myResult?->referral_bonus_amount ?? 0) }} تومان</strong></div>
-            <div class="summary-row"><span>مبلغ قابل تسویه</span><strong>{{ number_format($myResult?->final_settlement_amount ?? 0) }} تومان</strong></div>
+            <div class="summary-row"><span>سهم شما از صندوق</span><strong>{{ number_format($myResult?->reward_amount ?? 0) }} توکن</strong></div>
+            <div class="summary-row"><span>پاداش دعوت</span><strong>{{ number_format($myResult?->referral_bonus_amount ?? 0) }} توکن</strong></div>
+            <div class="summary-row"><span>قابل تسویه</span><strong>{{ number_format($myResult?->final_settlement_amount ?? 0) }} توکن</strong></div>
             <div class="summary-row"><span>وضعیت تسویه</span><strong>{{ $myResult?->settlement_status ?? 'در انتظار' }}</strong></div>
         </x-ui.card>
-        <x-ui.card><strong>تاریخچه تسویه</strong><p class="muted">تسویه‌ها پس از نهایی‌سازی دوره توسط مدیر نمایش داده می‌شوند.</p></x-ui.card>
+        <x-ui.card><strong>تاریخچه تسویه</strong><p class="muted">بعد از پایان جام، بدهکاری و بستانکاری نهایی بر اساس توکن‌ها محاسبه و برای واریز ریالی اعلام می‌شود.</p></x-ui.card>
     </div>
 </div>
 @endsection

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
-use App\Services\CardNumberService;
 use App\Services\InviteAccessService;
 use App\Services\InviteCodeGenerator;
 use App\Services\UnauthorizedAccessService;
@@ -64,20 +63,15 @@ class AuthController extends Controller
         RegisterRequest $request,
         InviteCodeGenerator $inviteCodeGenerator,
         InviteAccessService $inviteAccess,
-        CardNumberService $cardNumberService,
     ) {
         $inviteAccess->requireContext($request);
         $data = $request->validated();
-        $card = $cardNumberService->normalize($data['card_number']);
 
         $user = User::create([
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
             'mobile' => $data['mobile'],
             'password' => $data['password'],
-            'card_number' => $card,
-            'card_hash' => $cardNumberService->hash($card),
-            'card_last4' => $cardNumberService->last4($card),
             'invite_code' => $inviteCodeGenerator->make(),
             'mobile_verified_at' => now(),
         ]);

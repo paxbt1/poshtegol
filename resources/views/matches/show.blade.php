@@ -9,7 +9,8 @@
     $homeCrest = $match->homeTeam?->crestDisplayUrl();
     $awayCrest = $match->awayTeam?->crestDisplayUrl();
     $startsIso = $match->starts_at?->timezone('Asia/Tehran')->toIso8601String();
-    $destinationCard = \App\Models\AppSetting::getValue('offline_payment_card_number', '6221061063729273');
+    $isFinished = in_array($match->status, ['finished', 'awarded', 'after_extra_time', 'after_penalties', 'settled'], true);
+    $hasScore = $match->home_score !== null && $match->away_score !== null;
     $resultLabels = ['home' => 'برد '.$homeName, 'draw' => 'مساوی', 'away' => 'برد '.$awayName];
     $totalGoalLabels = ['under_2_5' => 'کمتر از ۲.۵', 'over_2_5' => 'بیشتر از ۲.۵'];
 @endphp
@@ -20,16 +21,20 @@
         <span class="brand-pill" style="background:rgba(255,255,255,.12); color:#fff;">{{ $match->stage_label_fa }} {{ $match->group_name ? ' - گروه '.$match->group_name : '' }}</span>
         <div class="teams" style="margin-top:22px;">
             <div class="team"><span class="flag team-logo">@if($homeCrest)<img src="{{ $homeCrest }}" alt="{{ $homeName }}">@else{{ $homeFlag }}@endif</span><span>{{ $homeName }}</span></div>
-            <div class="versus" style="color:#fff;">VS</div>
+            <div class="{{ $isFinished && $hasScore ? 'final-score-pill light' : 'versus' }}" style="color:#fff;">{{ $isFinished && $hasScore ? $match->home_score.' - '.$match->away_score : 'VS' }}</div>
             <div class="team"><span class="flag team-logo">@if($awayCrest)<img src="{{ $awayCrest }}" alt="{{ $awayName }}">@else{{ $awayFlag }}@endif</span><span>{{ $awayName }}</span></div>
         </div>
-        <div class="countdown-box" data-countdown data-starts-at="{{ $startsIso }}"></div>
+        @if($isFinished && $hasScore)
+            <div class="match-result-line light">نتیجه نهایی: {{ $homeName }} {{ $match->home_score }} - {{ $match->away_score }} {{ $awayName }}</div>
+        @else
+            <div class="countdown-box" data-countdown data-starts-at="{{ $startsIso }}"></div>
+        @endif
         <p style="color:rgba(255,255,255,.78); text-align:center;">شروع بازی: {{ \App\Support\Jalali::format($match->starts_at, 'Y/m/d H:i') }}</p>
         <p style="color:rgba(255,255,255,.78); text-align:center;">مهلت پیش‌بینی تا {{ \App\Support\Jalali::format(app(\App\Services\MatchLockService::class)->lockTime($match), 'Y/m/d H:i') }}</p>
     </div>
 </section>
 
-@if(! $canPredict)
+@if(! $canPredict && ! $paidEntry)
     <div class="notice" style="margin-top:14px;">{{ $lockReason }}</div>
 @endif
 
@@ -38,9 +43,6 @@
         @if($paidEntry)
             <x-ui.card>
                 <h2 class="section-title" style="margin-top:0;">پیش‌بینی ثبت‌شده شما</h2>
-                @if($paidEntry->payment_status === 'pending_review')
-                    <div class="notice" style="margin-bottom:12px;">رسید شما ثبت شده و در انتظار تایید مدیر است.</div>
-                @endif
                 <div class="grid">
                     <div class="summary-row"><span>نتیجه نهایی</span><strong>{{ $resultLabels[$paidEntry->full_time_result] ?? '-' }}</strong></div>
                     <div class="summary-row"><span>نتیجه دقیق</span><strong>{{ $paidEntry->exact_home_score }} - {{ $paidEntry->exact_away_score }}</strong></div>
@@ -48,7 +50,8 @@
                     @if($paidEntry->qualifiedTeam)
                         <div class="summary-row"><span>تیم صعودکننده</span><strong>{{ $paidEntry->qualifiedTeam->name_fa }}</strong></div>
                     @endif
-                    <div class="summary-row"><span>مبلغ بازی</span><strong>{{ number_format($paidEntry->entry_amount) }} تومان</strong></div>
+                    <div class="summary-row"><span>توکن شرط</span><strong>{{ number_format($paidEntry->entry_amount) }} توکن</strong></div>
+                    <div class="summary-row"><span>وضعیت</span><strong>ثبت و قفل‌شده</strong></div>
                 </div>
             </x-ui.card>
         @elseif($canPredict)
@@ -91,8 +94,20 @@
                         </select>
                         <div class="form-error" data-error-for="qualified_team_id"></div>
                     </div>
+                    <div class="token-stake-panel">
+                        <div>
+                            <label for="stake_tokens">تعداد توکن شرط</label>
+                            <p class="muted small">این عدد تا پایان جام مبنای بدهکاری یا بستانکاری شماست.</p>
+                        </div>
+                        <div class="token-input-wrap">
+                            <input id="stake_tokens" class="input" name="stake_tokens" type="number" inputmode="numeric" min="1" max="100000" value="1">
+                            <span>توکن</span>
+                        </div>
+                        <div class="summary-row token-summary"><span>ثبت نهایی</span><strong data-payable-amount>۱ توکن</strong></div>
+                        <div class="form-error" data-error-for="stake_tokens"></div>
+                    </div>
                     <div class="form-error" data-error-for="match"></div>
-                    <button class="btn btn-primary w-full" type="submit" style="margin-top:16px;">ثبت پیش‌بینی</button>
+                    <button class="btn btn-primary w-full" type="submit" style="margin-top:16px;">ثبت شرط با توکن</button>
                 </form>
             </x-ui.card>
         @endif
@@ -109,34 +124,8 @@
                     <div><strong>تیم صعودکننده</strong><span>در بازی‌های حذفی، انتخاب درست تیم صعودکننده ۳ امتیاز دارد.</span></div>
                 @endif
             </div>
-            <div class="summary-row" style="margin-top:8px;"><span>صندوق فعلی این بازی</span><strong>{{ number_format($poolAmount) }} تومان</strong></div>
+            <div class="summary-row" style="margin-top:8px;"><span>صندوق توکنی این بازی</span><strong>{{ number_format($poolAmount) }} توکن</strong></div>
         </x-ui.card>
-
-        @unless($paidEntry)
-            <x-ui.card>
-                <h2 class="section-title" style="margin-top:0;">پرداخت کارت به کارت</h2>
-                <div class="grid">
-                    <div class="summary-row"><span>مبلغ قابل پرداخت</span><strong class="summary-total" data-payable-amount>{{ number_format($amounts['payable_amount']) }} تومان</strong></div>
-                    <div class="summary-row"><span>شماره کارت مقصد</span><strong dir="ltr">{{ $destinationCard }}</strong></div>
-                </div>
-                <form data-ajax data-pay-form method="POST" action="#" class="hidden offline-payment-form">
-                    @csrf
-                    <div class="field" style="margin-top:14px;">
-                        <label>شماره کارت واریزکننده</label>
-                        <input class="input" dir="ltr" name="payer_card_number" inputmode="numeric" maxlength="16" placeholder="16 رقم بدون فاصله">
-                        <div class="form-error" data-error-for="payer_card_number"></div>
-                    </div>
-                    <div class="field">
-                        <label>شماره رسید تراکنش</label>
-                        <input class="input" dir="ltr" name="receipt_number" maxlength="100">
-                        <div class="form-error" data-error-for="receipt_number"></div>
-                    </div>
-                    <div class="form-error" data-error-for="payment"></div>
-                    <button class="btn btn-primary w-full" data-pay-button type="submit" disabled style="margin-top:12px;">ثبت رسید و انتظار تایید</button>
-                </form>
-                <p class="muted small" style="line-height:1.8;">بعد از ثبت پیش‌بینی، مبلغ را به کارت بالا واریز کنید و شماره کارت و رسید را وارد کنید. پیش‌بینی بعد از تایید مدیر نهایی می‌شود.</p>
-            </x-ui.card>
-        @endunless
     </aside>
 </div>
 
@@ -146,19 +135,17 @@
         <span class="chip active">{{ $participants->count() }} نفر</span>
     </div>
     @if($participants->isEmpty())
-        <p class="muted" style="line-height:1.9;">هنوز کسی برای این بازی پیش‌بینی تاییدشده ثبت نکرده است.</p>
+        <p class="muted" style="line-height:1.9;">هنوز کسی برای این بازی پیش‌بینی ثبت نکرده است.</p>
     @else
         <div class="participants-list">
             @foreach($participants as $entry)
                 <div class="participant-row">
-                    <div><strong>{{ $entry->user->full_name }}</strong><span>{{ $entry->paid_at ? \App\Support\Jalali::format($entry->paid_at, 'Y/m/d H:i') : 'در انتظار بررسی' }}</span></div>
+                    <div><strong>{{ $entry->user->full_name }}</strong><span>{{ $entry->paid_at ? \App\Support\Jalali::format($entry->paid_at, 'Y/m/d H:i') : 'ثبت‌شده' }}</span></div>
                     <div class="participant-meta">
-                        @if($entry->payment_status === 'pending_review')
-                            <span class="badge badge-closing">در انتظار تایید</span>
-                        @elseif($entry->result)
+                        @if($entry->result)
                             <span class="badge badge-open">{{ $entry->result->total_points }} امتیاز</span>
                         @else
-                            <span class="badge badge-locked">ثبت‌شده</span>
+                            <span class="badge badge-locked">{{ number_format($entry->entry_amount) }} توکن</span>
                         @endif
                     </div>
                 </div>
