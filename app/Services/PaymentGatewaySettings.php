@@ -23,7 +23,7 @@ class PaymentGatewaySettings
                 'payment.drivers.zibal.merchantId' => $merchantId,
                 'payment.drivers.zibal.callbackUrl' => $callbackUrl ?: route('payment.callback.zibal'),
                 'payment.drivers.zibal.currency' => in_array($currency, ['R', 'T'], true) ? $currency : 'R',
-                'payment.drivers.zibal.description' => (string) AppSetting::getValue('zibal_description', 'پرداخت کاپ خانوادگی'),
+                'payment.drivers.zibal.description' => (string) AppSetting::getValue('zibal_description', 'درخواست پرداخت'),
             ]);
         }
     }

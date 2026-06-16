@@ -354,7 +354,7 @@ return [
 
             'merchantId' => env('ZIBAL_SANDBOX', false) ? 'zibal' : env('ZIBAL_MERCHANT_ID', ''),
             'callbackUrl' => env('APP_URL', 'http://localhost').'/payment/callback/zibal',
-            'description' => 'پرداخت کاپ خانوادگی',
+            'description' => 'درخواست پرداخت',
             'currency' => 'R', //Can be R, T (Rial, Toman)
         ],
         'sepordeh' => [

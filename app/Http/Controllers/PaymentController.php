@@ -73,7 +73,11 @@ class PaymentController extends Controller
             'entry_amount' => $entry->entry_amount,
             'gateway_fee_amount' => $entry->gateway_fee_amount,
             'status' => 'pending',
-            'request_payload' => ['entry_id' => $entry->id, 'match_id' => $entry->match_id],
+            'request_payload' => [
+                'entry_id' => $entry->id,
+                'match_id' => $entry->match_id,
+                'gateway_description' => 'درخواست پرداخت',
+            ],
         ]);
 
         $entry->update([
@@ -85,7 +89,7 @@ class PaymentController extends Controller
             ->amount($transaction->amount_gateway)
             ->detail([
                 'mobile' => $request->user()->mobile,
-            'description' => 'پرداخت ',
+                'description' => 'درخواست پرداخت',
                 'orderId' => 'prediction-'.$entry->id.'-'.$transaction->id,
             ]);
 
@@ -102,12 +106,21 @@ class PaymentController extends Controller
                 'transaction_id' => $transaction->id,
                 'prediction_entry_id' => $entry->id,
                 'amount_gateway' => $transaction->amount_gateway,
+                'merchant_id_present' => filled(config('payment.drivers.zibal.merchantId')),
+                'callback_url' => config('payment.drivers.zibal.callbackUrl'),
+                'currency' => config('payment.drivers.zibal.currency'),
+                'exception_class' => $e::class,
+                'exception_code' => $e->getCode(),
                 'error' => $e->getMessage(),
             ]);
 
             $transaction->update([
                 'status' => 'failed',
-                'callback_payload' => ['error' => $e->getMessage()],
+                'callback_payload' => [
+                    'error' => $e->getMessage(),
+                    'exception_class' => $e::class,
+                    'exception_code' => $e->getCode(),
+                ],
             ]);
 
             $entry->update([
@@ -116,7 +129,7 @@ class PaymentController extends Controller
             ]);
 
             throw ValidationException::withMessages([
-                'payment' => 'خطا در اتصال به درگاه زیبال: '.$e->getMessage(),
+                'payment' => $this->purchaseErrorMessage($e),
             ]);
         }
 
@@ -187,5 +200,29 @@ class PaymentController extends Controller
         return view('payment.result', [
             'transaction' => $transaction->load(['predictionEntry.match.homeTeam', 'predictionEntry.match.awayTeam', 'predictionEntry.qualifiedTeam']),
         ]);
+    }
+
+    private function purchaseErrorMessage(Throwable $e): string
+    {
+        $code = (int) $e->getCode();
+        $known = [
+            102 => 'مرچنت زیبال پیدا نشد.',
+            103 => 'مرچنت زیبال غیرفعال است.',
+            104 => 'مرچنت‌کد زیبال نامعتبر است.',
+            105 => 'مبلغ پرداخت باید بیشتر از ۱۰۰۰ ریال باشد.',
+            106 => 'Callback URL زیبال نامعتبر است.',
+            113 => 'مبلغ تراکنش از سقف مجاز مرچنت بیشتر است.',
+        ];
+
+        if (isset($known[$code])) {
+            return 'خطا در اتصال به درگاه زیبال: '.$known[$code].' کد '.$code;
+        }
+
+        $message = trim($e->getMessage());
+        if ($message === '' || str_contains($message, 'ناشناخته')) {
+            return 'خطا در اتصال به درگاه زیبال. کد خطا: '.($code ?: 'نامشخص').'. جزئیات در storage/logs/laravel.log ثبت شد.';
+        }
+
+        return 'خطا در اتصال به درگاه زیبال: '.$message;
     }
 }
