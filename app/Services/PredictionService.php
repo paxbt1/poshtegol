@@ -17,12 +17,11 @@ class PredictionService
     public function calculateAmounts(FootballMatch $match): array
     {
         $entryAmount = (int) ($match->entry_amount ?: 50000);
-        $gatewayFee = $this->amountService->gatewayFee($entryAmount);
 
         return [
             'entry_amount' => $entryAmount,
-            'gateway_fee_amount' => $gatewayFee,
-            'payable_amount' => $entryAmount + $gatewayFee,
+            'gateway_fee_amount' => 0,
+            'payable_amount' => $entryAmount,
         ];
     }
 
@@ -69,7 +68,7 @@ class PredictionService
         PredictionEntry::where('user_id', $entry->user_id)
             ->where('match_id', $entry->match_id)
             ->where('id', '!=', $entry->id)
-            ->whereIn('payment_status', ['unpaid', 'pending'])
+            ->whereIn('payment_status', ['unpaid', 'pending', 'pending_review', 'failed'])
             ->update(['payment_status' => 'cancelled', 'prediction_status' => 'cancelled', 'cancelled_at' => now()]);
 
         return $entry->refresh();
@@ -79,7 +78,7 @@ class PredictionService
     {
         return PredictionEntry::where('user_id', $user->id)
             ->where('match_id', $match->id)
-            ->whereIn('payment_status', ['paid', 'needs_review', 'paid_but_locked'])
+            ->whereIn('payment_status', ['paid', 'needs_review', 'paid_but_locked', 'pending_review'])
             ->first();
     }
 }

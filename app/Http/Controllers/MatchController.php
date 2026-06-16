@@ -11,7 +11,10 @@ class MatchController extends Controller
 {
     public function index(Request $request)
     {
-        $query = FootballMatch::query()->with(['homeTeam', 'awayTeam', 'period'])->orderBy('starts_at');
+        $query = FootballMatch::query()
+            ->with(['homeTeam', 'awayTeam', 'period'])
+            ->orderByRaw("CASE WHEN status IN ('finished', 'awarded', 'after_extra_time', 'after_penalties') THEN 1 ELSE 0 END")
+            ->orderBy('starts_at');
 
         if ($stage = $request->query('stage')) {
             if ($stage === 'knockout') {
@@ -47,7 +50,7 @@ class MatchController extends Controller
             'awayTeam',
             'period',
             'predictionEntries' => fn ($query) => $query
-                ->whereIn('payment_status', ['paid', 'paid_but_locked'])
+                ->whereIn('payment_status', ['paid', 'paid_but_locked', 'pending_review'])
                 ->with(['user', 'result'])
                 ->latest('paid_at'),
         ]);

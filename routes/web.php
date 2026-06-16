@@ -36,8 +36,7 @@ Route::get('/search', [PublicSiteController::class, 'search'])->name('public.sea
 Route::get('/cup', [PublicSiteController::class, 'cup'])->name('public.cup');
 
 Route::get('/join/{code}', JoinController::class)->name('join');
-Route::get('/payment/callback/zibal', [PaymentController::class, 'callback'])->name('payment.callback.zibal');
-
+Route::get('/payment/callback/zibal', fn () => abort(404))->name('payment.callback.zibal');
 Route::get('/auth', [AuthController::class, 'show'])->name('login');
 Route::post('/auth/login', [AuthController::class, 'login'])->name('auth.login');
 
@@ -103,6 +102,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
     Route::get('/predictions', [AdminController::class, 'page'])->defaults('page', 'predictions')->name('predictions');
     Route::get('/payments', [AdminController::class, 'page'])->defaults('page', 'payments')->name('payments');
+    Route::post('/payment-transactions/{transaction}/approve', [AdminController::class, 'approvePayment'])->name('payment-transactions.approve');
+    Route::post('/payment-transactions/{transaction}/reject', [AdminController::class, 'rejectPayment'])->name('payment-transactions.reject');
     Route::get('/settlements', [AdminController::class, 'page'])->defaults('page', 'settlements')->name('settlements');
     Route::get('/settlements/{period}', [SettlementController::class, 'show'])->name('settlements.show');
     Route::post('/settlements/{period}/calculate', [SettlementController::class, 'calculate'])->name('settlements.calculate');

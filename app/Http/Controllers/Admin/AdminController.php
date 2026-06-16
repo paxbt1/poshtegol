@@ -13,6 +13,7 @@ use App\Models\PredictionEntry;
 use App\Models\ReferralRelation;
 use App\Models\User;
 use App\Services\InviteCodeGenerator;
+use App\Services\PredictionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -84,12 +85,9 @@ class AdminController extends Controller
                 'microsoft_translator_key' => AppSetting::getValue('microsoft_translator_key', config('news.microsoft_translator_key', '')),
                 'microsoft_translator_region' => AppSetting::getValue('microsoft_translator_region', config('news.microsoft_translator_region', '')),
                 'microsoft_translator_endpoint' => AppSetting::getValue('microsoft_translator_endpoint', config('news.microsoft_translator_endpoint', 'https://api.cognitive.microsofttranslator.com')),
-                'payment_driver' => AppSetting::getValue('payment_driver', config('payment.default', 'zibal')),
-                'zibal_merchant_id' => AppSetting::getValue('zibal_merchant_id', env('ZIBAL_MERCHANT_ID', '')),
-                'zibal_sandbox' => AppSetting::getBool('zibal_sandbox', (bool) env('ZIBAL_SANDBOX', false)),
-                'zibal_callback_url' => AppSetting::getValue('zibal_callback_url', route('payment.callback.zibal')),
-                'payment_currency' => AppSetting::getValue('payment_currency', config('payment.drivers.zibal.currency', 'R')),
-                'payment_amount_multiplier' => AppSetting::getValue('payment_amount_multiplier', env('PAYMENT_AMOUNT_MULTIPLIER', 10)),
+                'payment_driver' => AppSetting::getValue('payment_driver', config('payment.default', 'offline_card')),
+                'offline_payment_card_number' => AppSetting::getValue('offline_payment_card_number', '6221061063729273'),
+                'payment_amount_multiplier' => 1,
             ],
         ]);
     }
@@ -219,28 +217,66 @@ class AdminController extends Controller
     public function updatePaymentGatewaySettings(Request $request)
     {
         $data = $request->validate([
-            'payment_driver' => ['required', Rule::in(['zibal'])],
-            'zibal_merchant_id' => ['nullable', 'string', 'max:255'],
-            'zibal_sandbox' => ['nullable', 'boolean'],
-            'zibal_callback_url' => ['required', 'url', 'max:255'],
-            'payment_currency' => ['required', Rule::in(['R', 'T'])],
-            'payment_amount_multiplier' => ['required', 'integer', 'min:1', 'max:100'],
+            'offline_payment_card_number' => ['required', 'regex:/^\d{16}$/'],
         ], [], [
-            'zibal_merchant_id' => 'مرچنت کد زیبال',
-            'zibal_callback_url' => 'آدرس بازگشت زیبال',
+            'offline_payment_card_number' => 'شماره کارت مقصد',
         ]);
 
-        AppSetting::setValue('payment_driver', 'zibal');
-        AppSetting::setValue('zibal_sandbox', $request->boolean('zibal_sandbox'));
-        AppSetting::setValue('zibal_callback_url', $data['zibal_callback_url']);
-        AppSetting::setValue('payment_currency', $data['payment_currency']);
-        AppSetting::setValue('payment_amount_multiplier', $data['payment_amount_multiplier']);
+        AppSetting::setValue('payment_driver', 'offline_card');
+        AppSetting::setValue('offline_payment_card_number', preg_replace('/\D+/', '', $data['offline_payment_card_number']));
+        AppSetting::setValue('payment_amount_multiplier', 1);
 
-        if (! empty($data['zibal_merchant_id'])) {
-            AppSetting::setValue('zibal_merchant_id', $data['zibal_merchant_id'], true);
+        return response()->json(['message' => 'تنظیمات پرداخت کارت به کارت ذخیره شد.']);
+    }
+
+    public function approvePayment(PaymentTransaction $transaction, PredictionService $predictionService)
+    {
+        if ($transaction->status !== 'pending_review') {
+            return response()->json(['message' => 'این رسید در وضعیت قابل تایید نیست.'], 422);
         }
 
-        return response()->json(['message' => 'تنظیمات درگاه پرداخت ذخیره شد.']);
+        $entry = $transaction->predictionEntry()->with('match')->firstOrFail();
+
+        $transaction->update([
+            'status' => 'paid',
+            'paid_at' => now(),
+            'verified_at' => now(),
+            'callback_payload' => array_merge($transaction->callback_payload ?? [], [
+                'approved_by' => auth()->id(),
+                'approved_at' => now()->toIso8601String(),
+            ]),
+        ]);
+
+        $predictionService->finalizeAfterPayment($entry);
+
+        return response()->json(['message' => 'رسید تایید شد و پیش‌بینی نهایی شد.', 'redirect' => route('admin.payments')]);
+    }
+
+    public function rejectPayment(Request $request, PaymentTransaction $transaction)
+    {
+        if ($transaction->status !== 'pending_review') {
+            return response()->json(['message' => 'این رسید در وضعیت قابل رد نیست.'], 422);
+        }
+
+        $data = $request->validate([
+            'reject_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $transaction->update([
+            'status' => 'failed',
+            'callback_payload' => array_merge($transaction->callback_payload ?? [], [
+                'rejected_by' => auth()->id(),
+                'rejected_at' => now()->toIso8601String(),
+                'reject_reason' => $data['reject_reason'] ?? null,
+            ]),
+        ]);
+
+        $transaction->predictionEntry?->update([
+            'payment_status' => 'failed',
+            'prediction_status' => 'draft',
+        ]);
+
+        return response()->json(['message' => 'رسید رد شد.', 'redirect' => route('admin.payments')]);
     }
 
     public function updateUser(Request $request, User $user)
@@ -348,7 +384,7 @@ class AdminController extends Controller
             'poolAmount' => (clone $paid)->sum('entry_amount'),
             'paidAmount' => (clone $paid)->sum('amount'),
             'paidCount' => (clone $paid)->count(),
-            'needsReviewCount' => PaymentTransaction::where('status', 'needs_review')->count(),
+            'needsReviewCount' => PaymentTransaction::where('status', 'pending_review')->count(),
             'settings' => [
                 'gateway_fee_percent' => AppSetting::getValue('gateway_fee_percent', env('GATEWAY_FEE_PERCENT', 10)),
                 'referral_rate' => AppSetting::getValue('referral_rate', 3),

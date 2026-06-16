@@ -100,15 +100,15 @@ class FootballMatch extends Model
 
     public function predictionState(): string
     {
-        if ($this->status === 'finished') {
+        if (in_array($this->status, ['finished', 'awarded', 'after_extra_time', 'after_penalties'], true)) {
             return 'finished';
         }
 
-        if (now()->greaterThanOrEqualTo($this->prediction_locks_at)) {
+        if (! app(\App\Services\MatchLockService::class)->canPredict($this)) {
             return 'locked';
         }
 
-        if (now()->diffInMinutes($this->prediction_locks_at, false) <= 180) {
+        if (now()->diffInMinutes(app(\App\Services\MatchLockService::class)->lockTime($this), false) <= 180) {
             return 'closing';
         }
 

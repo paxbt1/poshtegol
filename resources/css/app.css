@@ -245,6 +245,14 @@ button, input, select { font: inherit; }
 }
 .bottom-nav a.active { color: var(--green); }
 .match-card { display: grid; gap: 14px; }
+.match-card.is-disabled {
+    opacity: .62;
+    filter: grayscale(.65);
+    background: #f3f4f6;
+}
+.match-card.is-disabled .btn {
+    pointer-events: none;
+}
 .teams { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
 .team { display: grid; gap: 5px; text-align: center; font-weight: 800; }
 .flag { font-size: 26px; }
@@ -368,7 +376,7 @@ button, input, select { font: inherit; }
 
 .countdown-box {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     margin-top: 10px;
 }

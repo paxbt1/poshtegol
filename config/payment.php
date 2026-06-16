@@ -10,7 +10,7 @@ return [
     | You can switch to a different driver at runtime.
     |
     */
-    'default' => env('PAYMENT_DRIVER', 'zibal'),
+    'default' => env('PAYMENT_DRIVER', 'offline_card'),
 
     /*
     |--------------------------------------------------------------------------

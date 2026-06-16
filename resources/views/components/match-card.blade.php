@@ -8,9 +8,11 @@
     $homeCrest = $match->homeTeam?->crestDisplayUrl();
     $awayCrest = $match->awayTeam?->crestDisplayUrl();
     $startsIso = $match->starts_at?->timezone('Asia/Tehran')->toIso8601String();
+    $canPredict = app(\App\Services\MatchLockService::class)->canPredict($match);
+    $isFinished = in_array($match->status, ['finished', 'awarded', 'after_extra_time', 'after_penalties'], true);
 @endphp
 
-<x-ui.card class="match-card">
+<x-ui.card class="match-card {{ $canPredict ? '' : 'is-disabled' }}">
     <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
         <span class="muted small">{{ $match->stage_label_fa ?? $match->period?->title ?? 'جام جهانی ۲۰۲۶' }} @if($match->group_name) / گروه {{ $match->group_name }} @endif</span>
         <x-status-badge :state="$match->predictionState()" />
@@ -29,6 +31,12 @@
     <div class="countdown-box" data-countdown data-starts-at="{{ $startsIso }}"></div>
     <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
         <span class="muted small">{{ \App\Support\Jalali::format($match->starts_at, 'Y/m/d H:i') }} - {{ $match->city ?? 'محل نامشخص' }}</span>
-        <a class="btn btn-primary" href="{{ route('matches.show', $match) }}">ثبت پیش‌بینی</a>
+        @if($canPredict)
+            <a class="btn btn-primary" href="{{ route('matches.show', $match) }}">ثبت پیش‌بینی</a>
+        @elseif($isFinished)
+            <span class="badge badge-finished">پایان‌یافته</span>
+        @else
+            <span class="badge badge-locked">بسته شده</span>
+        @endif
     </div>
 </x-ui.card>

@@ -225,41 +225,16 @@
     </x-ui.card>
 
     <x-ui.card>
-        <h2 class="section-title" style="margin-top:0;">تنظیمات درگاه زیبال</h2>
+        <h2 class="section-title" style="margin-top:0;">تنظیمات پرداخت کارت به کارت</h2>
         <form data-ajax method="POST" action="{{ route('admin.settings.payment-gateway.update') }}">
             @csrf
-            <input type="hidden" name="payment_driver" value="zibal">
-            <label class="toggle-row">
-                <input type="checkbox" name="zibal_sandbox" value="1" @checked($settings['zibal_sandbox'])>
-                <span>فعال‌سازی حالت Sandbox زیبال</span>
-            </label>
             <div class="field">
-                <label>Merchant ID زیبال</label>
-                <input class="input" dir="ltr" name="zibal_merchant_id" value="{{ $settings['zibal_merchant_id'] }}" placeholder="در Sandbox لازم نیست">
-                <div class="form-error" data-error-for="zibal_merchant_id"></div>
+                <label>شماره کارت مقصد</label>
+                <input class="input" dir="ltr" name="offline_payment_card_number" value="{{ $settings['offline_payment_card_number'] }}" inputmode="numeric" maxlength="16" required>
+                <div class="form-error" data-error-for="offline_payment_card_number"></div>
             </div>
-            <div class="field">
-                <label>Callback URL</label>
-                <input class="input" dir="ltr" name="zibal_callback_url" value="{{ $settings['zibal_callback_url'] }}" required>
-                <div class="form-error" data-error-for="zibal_callback_url"></div>
-            </div>
-            <div class="grid grid-2">
-                <div class="field">
-                    <label>واحد ارسال به درگاه</label>
-                    <select class="input" name="payment_currency">
-                        <option value="R" @selected($settings['payment_currency'] === 'R')>ریال</option>
-                        <option value="T" @selected($settings['payment_currency'] === 'T')>تومان</option>
-                    </select>
-                    <div class="form-error" data-error-for="payment_currency"></div>
-                </div>
-                <div class="field">
-                    <label>ضریب تبدیل مبلغ</label>
-                    <input class="input" name="payment_amount_multiplier" inputmode="numeric" value="{{ $settings['payment_amount_multiplier'] }}" required>
-                    <div class="form-error" data-error-for="payment_amount_multiplier"></div>
-                </div>
-            </div>
-            <p class="muted small" style="line-height:1.8;">اگر واحد درگاه ریال است و مبلغ‌های اپ تومان ذخیره می‌شوند، ضریب تبدیل باید ۱۰ باشد.</p>
-            <button class="btn btn-primary w-full" type="submit" style="margin-top:16px;">ذخیره تنظیمات درگاه</button>
+            <p class="muted small" style="line-height:1.8;">این شماره کارت در فرم پرداخت کاربران نمایش داده می‌شود. پرداخت‌ها بعد از ثبت رسید در وضعیت «در انتظار تایید» می‌مانند.</p>
+            <button class="btn btn-primary w-full" type="submit" style="margin-top:16px;">ذخیره تنظیمات پرداخت</button>
         </form>
     </x-ui.card>
 </div>

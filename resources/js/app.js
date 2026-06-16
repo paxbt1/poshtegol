@@ -39,13 +39,6 @@ document.querySelectorAll('form[data-ajax]').forEach((form) => {
 
         const button = form.querySelector('[type="submit"]');
         const oldText = button?.textContent;
-
-        /**
-         * Important:
-         * Do not use form.action directly.
-         * If the form contains an input named "action", browsers may return that input
-         * instead of the form action URL, causing requests like /admin/[object HTMLInputElement].
-         */
         const actionUrl = form.getAttribute('action') || form.dataset.action || window.location.href;
         const method = (form.getAttribute('method') || 'POST').toUpperCase();
 
@@ -138,11 +131,8 @@ if (predictionForm) {
             payForm.action = event.detail.pay_url;
             payForm.classList.remove('hidden');
             payButton?.removeAttribute('disabled');
+            payForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-    });
-
-    payForm?.addEventListener('ajax:success', (event) => {
-        if (event.detail.redirect) window.location.href = event.detail.redirect;
     });
 }
 
@@ -195,13 +185,14 @@ const updateCountdowns = () => {
             return;
         }
 
-        const totalMinutes = Math.floor(diff / 60000);
-        const days = Math.floor(totalMinutes / 1440);
-        const hours = Math.floor((totalMinutes % 1440) / 60);
-        const minutes = totalMinutes % 60;
+        const totalSeconds = Math.floor(diff / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
 
         if (box.dataset.mode === 'compact') {
-            box.textContent = `${toPersianNumber(days)} روز، ${toPersianNumber(hours)} ساعت، ${toPersianNumber(minutes)} دقیقه`;
+            box.textContent = `${toPersianNumber(days)} روز، ${toPersianNumber(hours)} ساعت، ${toPersianNumber(minutes)} دقیقه، ${toPersianNumber(seconds)} ثانیه`;
             return;
         }
 
@@ -209,9 +200,10 @@ const updateCountdowns = () => {
             <div class="countdown-item"><strong>${toPersianNumber(days)}</strong><span>روز</span></div>
             <div class="countdown-item"><strong>${toPersianNumber(hours)}</strong><span>ساعت</span></div>
             <div class="countdown-item"><strong>${toPersianNumber(minutes)}</strong><span>دقیقه</span></div>
+            <div class="countdown-item"><strong>${toPersianNumber(seconds)}</strong><span>ثانیه</span></div>
         `;
     });
 };
 
 updateCountdowns();
-setInterval(updateCountdowns, 60000);
+setInterval(updateCountdowns, 1000);
