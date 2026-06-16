@@ -17,7 +17,7 @@ class PredictionService
 
     public function calculateAmounts(FootballMatch $match, ?int $stakeTokens = null): array
     {
-        $tokens = max(1, (int) ($stakeTokens ?: 1));
+        $tokens = max(50, (int) ($stakeTokens ?: 50));
 
         return [
             'entry_amount' => $tokens,
@@ -36,7 +36,7 @@ class PredictionService
             throw ValidationException::withMessages(['match' => 'این پیش‌بینی ثبت و قفل شده و قابل تغییر نیست.']);
         }
 
-        $tokens = max(1, (int) ($data['stake_tokens'] ?? 1));
+        $tokens = max(50, (int) ($data['stake_tokens'] ?? 50));
         $amounts = $this->calculateAmounts($match, $tokens);
 
         return DB::transaction(function () use ($user, $match, $data, $tokens, $amounts) {

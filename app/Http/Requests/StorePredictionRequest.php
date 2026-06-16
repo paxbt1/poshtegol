@@ -20,7 +20,7 @@ class StorePredictionRequest extends FormRequest
             'exact_away_score' => ['required', 'integer', 'min:0', 'max:9'],
             'total_goals_option' => ['required', Rule::in(['under_2_5', 'over_2_5'])],
             'qualified_team_id' => [$requiresQualifiedTeam ? 'required' : 'nullable', 'nullable', Rule::in($teamIds)],
-            'stake_tokens' => ['required', 'integer', 'min:1', 'max:100000'],
+            'stake_tokens' => ['required', 'integer', 'min:50', 'max:100000'],
         ];
     }
 
@@ -38,7 +38,7 @@ class StorePredictionRequest extends FormRequest
             'qualified_team_id.in' => 'تیم صعودکننده باید یکی از دو تیم همین بازی باشد.',
             'stake_tokens.required' => 'تعداد توکن شرط را وارد کنید.',
             'stake_tokens.integer' => 'تعداد توکن باید عدد صحیح باشد.',
-            'stake_tokens.min' => 'حداقل تعداد شرط ۱ توکن است.',
+            'stake_tokens.min' => 'حداقل تعداد شرط ۵۰ توکن است.',
             'stake_tokens.max' => 'تعداد توکن واردشده بیش از حد مجاز است.',
         ];
     }

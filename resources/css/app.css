@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -31,13 +32,16 @@
     --muted: var(--fc-muted);
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; font-family: inherit; }
 html { direction: rtl; }
 body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: Vazirmatn, Vazir, Tahoma, "Segoe UI", Arial, sans-serif;
+    font-family: Vazirmatn, Vazir, Tahoma, "Segoe UI", Arial, sans-serif !important;
+}
+button, input, select, textarea, table, .btn, .card, .auth-card, .public-body {
+    font-family: Vazirmatn, Vazir, Tahoma, "Segoe UI", Arial, sans-serif !important;
 }
 a { color: inherit; text-decoration: none; }
 button, input, select { font: inherit; }
@@ -940,7 +944,7 @@ button, input, select { font: inherit; }
 .admin-news-fields { display:grid; gap:10px; min-width:0; }
 .admin-ad-row-pro { grid-template-columns: 120px minmax(0,1fr); align-items:center; }
 .admin-ad-preview { width:100%; height:80px; object-fit:cover; border-radius:6px; border:1px solid var(--border); }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.mono { font-family: Vazirmatn, Vazir, Tahoma, "Segoe UI", Arial, sans-serif !important; }
 .small { font-size:12px; }
 .pg-container-wide { max-width: 1280px; }
 .pg-brand.compact { display:flex; align-items:center; gap:10px; }

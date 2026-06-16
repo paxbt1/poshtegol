@@ -11,7 +11,7 @@ class PredictionController extends Controller
 {
     public function preview(FootballMatch $match, MatchLockService $lockService, PredictionService $predictionService)
     {
-        $stakeTokens = max(1, (int) request('stake_tokens', 1));
+        $stakeTokens = max(50, (int) request('stake_tokens', 50));
         $amounts = $predictionService->calculateAmounts($match, $stakeTokens);
         $canPredict = $lockService->canPredict($match);
 

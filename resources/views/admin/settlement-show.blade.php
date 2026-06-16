@@ -29,7 +29,7 @@
         <a class="btn btn-outline" href="{{ route('admin.settlements.export', $period) }}">خروجی تسویه</a>
         <form data-ajax method="POST" action="{{ route('admin.settlements.mark-paid', $period) }}">@csrf<button class="btn btn-soft" type="submit">ثبت انجام تسویه</button></form>
     </div>
-    <p class="notice" style="margin-top:12px;">عدد قابل تسویه بر اساس خالص توکن محاسبه می‌شود: جایزه و پاداش دعوت منهای توکن‌های شرط‌بسته‌شده. وضعیت «بدهکار» یعنی کاربر باید معادل همان تعداد توکن واریز کند.</p>
+    <p class="notice" style="margin-top:12px;">عدد قابل تسویه بر اساس خالص توکن محاسبه می‌شود: جایزه و پاداش دعوت منهای توکن‌های شرط‌بسته‌شده. هر توکن برابر ۱۰۰۰ تومان است و وضعیت «بدهکار» یعنی کاربر باید معادل همان تعداد توکن واریز کند.</p>
 </x-ui.card>
 <x-ui.card style="margin-top:16px;">
     <h2 class="section-title" style="margin-top:0;">جدول رتبه و تسویه</h2>

@@ -97,13 +97,13 @@
                     <div class="token-stake-panel">
                         <div>
                             <label for="stake_tokens">تعداد توکن شرط</label>
-                            <p class="muted small">این عدد تا پایان جام مبنای بدهکاری یا بستانکاری شماست.</p>
+                            <p class="muted small">حداقل شرط ۵۰ توکن است. هر توکن برابر ۱۰۰۰ تومان است و در پایان جام مبنای بدهکاری یا بستانکاری قرار می‌گیرد.</p>
                         </div>
                         <div class="token-input-wrap">
-                            <input id="stake_tokens" class="input" name="stake_tokens" type="number" inputmode="numeric" min="1" max="100000" value="1">
+                            <input id="stake_tokens" class="input" name="stake_tokens" type="number" inputmode="numeric" min="50" max="100000" value="50">
                             <span>توکن</span>
                         </div>
-                        <div class="summary-row token-summary"><span>ثبت نهایی</span><strong data-payable-amount>۱ توکن</strong></div>
+                        <div class="summary-row token-summary"><span>ثبت نهایی</span><strong data-payable-amount>۵۰ توکن</strong></div>
                         <div class="form-error" data-error-for="stake_tokens"></div>
                     </div>
                     <div class="form-error" data-error-for="match"></div>

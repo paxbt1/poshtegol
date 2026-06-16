@@ -21,10 +21,10 @@ class GatewayFeeVisibilityTest extends TestCase
         $match = $this->match();
 
         $this->actingAs($user)
-            ->postJson(route('matches.prediction.preview', $match), ['stake_tokens' => 7])
+            ->postJson(route('matches.prediction.preview', $match), ['stake_tokens' => 75])
             ->assertOk()
-            ->assertJsonPath('entry_amount', 7)
-            ->assertJsonPath('payable_amount', 7)
+            ->assertJsonPath('entry_amount', 75)
+            ->assertJsonPath('payable_amount', 75)
             ->assertJsonMissingPath('gateway_fee_amount');
     }
 
@@ -34,20 +34,20 @@ class GatewayFeeVisibilityTest extends TestCase
         $match = $this->match();
 
         $this->actingAs($user)
-            ->postJson(route('matches.prediction.store', $match), $this->payload(['stake_tokens' => 12]))
+            ->postJson(route('matches.prediction.store', $match), $this->payload(['stake_tokens' => 120]))
             ->assertOk()
-            ->assertJsonPath('entry_amount_label', '12 توکن');
+            ->assertJsonPath('entry_amount_label', '120 توکن');
 
         $entry = PredictionEntry::firstOrFail();
         $transaction = PaymentTransaction::firstOrFail();
 
         $this->assertSame('paid', $entry->payment_status);
         $this->assertSame('locked', $entry->prediction_status);
-        $this->assertSame(12, (int) $entry->entry_amount);
+        $this->assertSame(120, (int) $entry->entry_amount);
         $this->assertSame('token', $transaction->gateway);
         $this->assertSame('paid', $transaction->status);
-        $this->assertSame(12, (int) $transaction->amount);
-        $this->assertSame(12, (int) $transaction->request_payload['stake_tokens']);
+        $this->assertSame(120, (int) $transaction->amount);
+        $this->assertSame(120, (int) $transaction->request_payload['stake_tokens']);
     }
 
     public function test_locked_token_prediction_cannot_be_changed(): void
@@ -69,7 +69,7 @@ class GatewayFeeVisibilityTest extends TestCase
             'exact_home_score' => 1,
             'exact_away_score' => 0,
             'total_goals_option' => 'under_2_5',
-            'stake_tokens' => 5,
+            'stake_tokens' => 50,
         ], $overrides);
     }
 
