@@ -28,9 +28,10 @@
                 <div class="form-error" data-error-for="unauthorized_redirect_url"></div>
             </div>
             <div class="field">
-                <label>قفل پیش‌بینی چند دقیقه قبل از شروع بازی؟</label>
+                <label>قفل خودکار پیش‌بینی</label>
                 <input class="input" name="prediction_lock_minutes" inputmode="numeric" value="{{ $settings['prediction_lock_minutes'] }}" required>
                 <div class="form-error" data-error-for="prediction_lock_minutes"></div>
+                <p class="muted small" style="line-height:1.8;">ثبت و ویرایش بر اساس تایم سرور تا شروع نیمه دوم باز می‌ماند و سپس خودکار بسته می‌شود.</p>
             </div>
             <label class="toggle-row">
                 <input type="checkbox" name="enable_half_time_markets" value="1" @checked($settings['enable_half_time_markets'])>
@@ -226,7 +227,7 @@
 
     <x-ui.card>
         <h2 class="section-title" style="margin-top:0;">مدل پرداخت توکنی</h2>
-        <p class="muted" style="line-height:1.9;">درگاه آنلاین و پرداخت کارت به کارت از مسیر پیش‌بینی حذف شده است. کاربر هنگام ثبت پیش‌بینی تعداد توکن را مشخص می‌کند؛ حداقل شرط ۵۰ توکن است و هر توکن برابر ۱۰۰۰ تومان محاسبه می‌شود. تسویه ریالی بعد از پایان جام بر اساس خالص توکن بدهکار یا بستانکار انجام می‌شود.</p>
+        <p class="muted" style="line-height:1.9;">درگاه آنلاین و پرداخت کارت به کارت از مسیر پیش‌بینی حذف شده است. کاربر هنگام ثبت پیش‌بینی تعداد توکن را مشخص می‌کند؛ حداقل شرط ۵۰ توکن است و هر ۱ توکن برابر ۱ تومان محاسبه می‌شود. مثلا ۱۰۰ هزار تومان می‌شود ۱۰۰۰۰۰ توکن. تسویه ریالی بعد از پایان جام بر اساس خالص توکن بدهکار یا بستانکار انجام می‌شود.</p>
         <a class="btn btn-primary w-full" href="{{ route('admin.settings.finance') }}" style="margin-top:16px;">تنظیمات توکن‌ها</a>
     </x-ui.card>
 </div>

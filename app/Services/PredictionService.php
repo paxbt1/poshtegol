@@ -32,10 +32,6 @@ class PredictionService
             throw ValidationException::withMessages(['match' => $this->lockService->reason($match)]);
         }
 
-        if ($this->paidEntry($user, $match)) {
-            throw ValidationException::withMessages(['match' => 'این پیش‌بینی ثبت و قفل شده و قابل تغییر نیست.']);
-        }
-
         $tokens = max(50, (int) ($data['stake_tokens'] ?? 50));
         $amounts = $this->calculateAmounts($match, $tokens);
 
@@ -43,7 +39,7 @@ class PredictionService
             $entry = PredictionEntry::query()
                 ->where('user_id', $user->id)
                 ->where('match_id', $match->id)
-                ->whereIn('payment_status', ['unpaid', 'pending', 'pending_review', 'failed', 'cancelled'])
+                ->whereIn('payment_status', ['paid', 'needs_review', 'paid_but_locked', 'unpaid', 'pending', 'pending_review', 'failed', 'cancelled'])
                 ->latest('id')
                 ->first() ?? new PredictionEntry([
                     'user_id' => $user->id,
@@ -59,7 +55,7 @@ class PredictionService
                 'qualified_team_id' => $data['qualified_team_id'] ?? null,
                 'payment_status' => 'paid',
                 'prediction_status' => 'locked',
-                'paid_at' => now(),
+                'paid_at' => $entry->paid_at ?: now(),
                 'locked_at' => now(),
                 'cancelled_at' => null,
             ]));
@@ -79,7 +75,10 @@ class PredictionService
                     'transaction_id' => 'token-'.$entry->id,
                     'reference_id' => 'token-'.$entry->id,
                     'status' => 'paid',
-                    'request_payload' => ['stake_tokens' => $tokens],
+                    'request_payload' => [
+                        'stake_tokens' => $tokens,
+                        'updated_at' => now()->toIso8601String(),
+                    ],
                     'callback_payload' => null,
                     'paid_at' => now(),
                     'verified_at' => now(),

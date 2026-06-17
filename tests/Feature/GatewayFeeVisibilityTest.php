@@ -50,11 +50,35 @@ class GatewayFeeVisibilityTest extends TestCase
         $this->assertSame(120, (int) $transaction->request_payload['stake_tokens']);
     }
 
-    public function test_locked_token_prediction_cannot_be_changed(): void
+    public function test_token_prediction_can_be_edited_before_second_half_lock(): void
     {
         $user = User::factory()->create();
         $match = $this->match();
-        $this->entry($user, $match, ['payment_status' => 'paid', 'prediction_status' => 'locked']);
+        $entry = $this->entry($user, $match, ['payment_status' => 'paid', 'prediction_status' => 'locked', 'entry_amount' => 50, 'payable_amount' => 50]);
+
+        $this->actingAs($user)
+            ->postJson(route('matches.prediction.store', $match), $this->payload([
+                'full_time_result' => 'away',
+                'exact_home_score' => 0,
+                'exact_away_score' => 2,
+                'stake_tokens' => 150,
+            ]))
+            ->assertOk();
+
+        $entry->refresh();
+        $this->assertSame('away', $entry->full_time_result);
+        $this->assertSame(150, (int) $entry->entry_amount);
+        $this->assertSame(150, (int) $entry->transactions()->where('gateway', 'token')->firstOrFail()->amount);
+    }
+
+    public function test_prediction_is_locked_after_second_half_failsafe_even_if_status_is_stale(): void
+    {
+        $user = User::factory()->create();
+        $match = $this->match([
+            'status' => 'scheduled',
+            'starts_at' => now()->subMinutes(61),
+            'prediction_locks_at' => now()->subMinute(),
+        ]);
 
         $this->actingAs($user)
             ->postJson(route('matches.prediction.store', $match), $this->payload())
@@ -91,13 +115,13 @@ class GatewayFeeVisibilityTest extends TestCase
         ], $overrides));
     }
 
-    private function match(): FootballMatch
+    private function match(array $overrides = []): FootballMatch
     {
         $period = SettlementPeriod::create(['title' => 'مرحله گروهی', 'type' => 'group_stage', 'status' => 'open']);
         $home = Team::create(['name_fa' => 'ایران', 'name_en' => 'Iran']);
         $away = Team::create(['name_fa' => 'مکزیک', 'name_en' => 'Mexico']);
 
-        return FootballMatch::create([
+        return FootballMatch::create(array_merge([
             'period_id' => $period->id,
             'stage' => 'group',
             'stage_label_fa' => 'مرحله گروهی',
@@ -107,6 +131,6 @@ class GatewayFeeVisibilityTest extends TestCase
             'starts_at' => now()->addDay(),
             'prediction_locks_at' => now()->addDay()->subHour(),
             'entry_amount' => 1,
-        ]);
+        ], $overrides));
     }
 }

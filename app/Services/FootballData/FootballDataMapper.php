@@ -97,7 +97,7 @@ class FootballDataMapper
             'half_time_home_score' => data_get($payload, 'score.halfTime.home'),
             'half_time_away_score' => data_get($payload, 'score.halfTime.away'),
             'starts_at' => $startsAt ?? $match?->starts_at,
-            'prediction_locks_at' => $startsAt ? $startsAt->copy()->subMinutes(max(0, AppSetting::getInt('prediction_lock_minutes', 60))) : $match?->prediction_locks_at,
+            'prediction_locks_at' => $startsAt ? $startsAt->copy()->addMinutes(60) : $match?->prediction_locks_at,
             'timezone_source' => 'UTC',
             'source_last_updated_at' => $sourceUpdatedAt,
             'last_synced_at' => now(),

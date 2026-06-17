@@ -113,8 +113,8 @@ class AdminController extends Controller
         AppSetting::setValue('prediction_lock_minutes', $data['prediction_lock_minutes']);
         AppSetting::setValue('enable_half_time_markets', $request->boolean('enable_half_time_markets'));
 
-        FootballMatch::whereNotNull('starts_at')->get()->each(function (FootballMatch $match) use ($data) {
-            $match->prediction_locks_at = $match->starts_at->copy()->subMinutes((int) $data['prediction_lock_minutes']);
+        FootballMatch::whereNotNull('starts_at')->get()->each(function (FootballMatch $match) {
+            $match->prediction_locks_at = $match->starts_at->copy()->addMinutes(60);
             $match->save();
         });
 

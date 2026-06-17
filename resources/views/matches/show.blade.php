@@ -11,6 +11,10 @@
     $startsIso = $match->starts_at?->timezone('Asia/Tehran')->toIso8601String();
     $isFinished = in_array($match->status, ['finished', 'awarded', 'after_extra_time', 'after_penalties', 'settled'], true);
     $hasScore = $match->home_score !== null && $match->away_score !== null;
+    $formEntry = $paidEntry && $canPredict ? $paidEntry : null;
+    $stakeValue = max(50, (int) ($formEntry?->entry_amount ?? 50));
+    $selectedResult = $formEntry?->full_time_result ?? 'home';
+    $selectedTotalGoals = $formEntry?->total_goals_option ?? 'under_2_5';
     $resultLabels = ['home' => 'برد '.$homeName, 'draw' => 'مساوی', 'away' => 'برد '.$awayName];
     $totalGoalLabels = ['under_2_5' => 'کمتر از ۲.۵', 'over_2_5' => 'بیشتر از ۲.۵'];
 @endphp
@@ -30,7 +34,7 @@
             <div class="countdown-box" data-countdown data-starts-at="{{ $startsIso }}"></div>
         @endif
         <p style="color:rgba(255,255,255,.78); text-align:center;">شروع بازی: {{ \App\Support\Jalali::format($match->starts_at, 'Y/m/d H:i') }}</p>
-        <p style="color:rgba(255,255,255,.78); text-align:center;">مهلت پیش‌بینی تا {{ \App\Support\Jalali::format(app(\App\Services\MatchLockService::class)->lockTime($match), 'Y/m/d H:i') }}</p>
+        <p style="color:rgba(255,255,255,.78); text-align:center;">مهلت ثبت و ویرایش تا قبل از شروع نیمه دوم: {{ \App\Support\Jalali::format(app(\App\Services\MatchLockService::class)->lockTime($match), 'Y/m/d H:i') }}</p>
     </div>
 </section>
 
@@ -40,7 +44,7 @@
 
 <div class="match-detail-layout" style="margin-top:14px;">
     <div class="match-main">
-        @if($paidEntry)
+        @if($paidEntry && ! $canPredict)
             <x-ui.card>
                 <h2 class="section-title" style="margin-top:0;">پیش‌بینی ثبت‌شده شما</h2>
                 <div class="grid">
@@ -51,32 +55,47 @@
                         <div class="summary-row"><span>تیم صعودکننده</span><strong>{{ $paidEntry->qualifiedTeam->name_fa }}</strong></div>
                     @endif
                     <div class="summary-row"><span>توکن شرط</span><strong>{{ number_format($paidEntry->entry_amount) }} توکن</strong></div>
-                    <div class="summary-row"><span>وضعیت</span><strong>ثبت و قفل‌شده</strong></div>
+                    <div class="summary-row"><span>وضعیت</span><strong>قفل‌شده</strong></div>
                 </div>
             </x-ui.card>
         @elseif($canPredict)
             <x-ui.card>
-                <h2 class="section-title" style="margin-top:0;">پیش‌بینی بازی</h2>
+                <h2 class="section-title" style="margin-top:0;">{{ $formEntry ? 'ویرایش پیش‌بینی' : 'پیش‌بینی بازی' }}</h2>
+                @if($formEntry)
+                    <div class="notice" style="margin-bottom:14px;">تا قبل از شروع نیمه دوم می‌توانید نتیجه و تعداد توکن این پیش‌بینی را ویرایش کنید.</div>
+                @endif
                 <form data-ajax data-prediction-form data-preview-url="{{ route('matches.prediction.preview', $match) }}" method="POST" action="{{ route('matches.prediction.store', $match) }}">
                     @csrf
                     <div class="field">
                         <label>نتیجه نهایی</label>
                         <div class="segmented">
-                            <label><input type="radio" name="full_time_result" value="home" checked><span class="segment">برد {{ $homeName }}</span></label>
-                            <label><input type="radio" name="full_time_result" value="draw"><span class="segment">مساوی</span></label>
-                            <label><input type="radio" name="full_time_result" value="away"><span class="segment">برد {{ $awayName }}</span></label>
+                            <label><input type="radio" name="full_time_result" value="home" @checked($selectedResult === 'home')><span class="segment">برد {{ $homeName }}</span></label>
+                            <label><input type="radio" name="full_time_result" value="draw" @checked($selectedResult === 'draw')><span class="segment">مساوی</span></label>
+                            <label><input type="radio" name="full_time_result" value="away" @checked($selectedResult === 'away')><span class="segment">برد {{ $awayName }}</span></label>
                         </div>
                         <div class="form-error" data-error-for="full_time_result"></div>
                     </div>
                     <div class="score-grid">
-                        <div class="field"><label>گل {{ $homeName }}</label><select class="input score-select" name="exact_home_score">@for($i=0;$i<=9;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor</select><div class="form-error" data-error-for="exact_home_score"></div></div>
-                        <div class="field"><label>گل {{ $awayName }}</label><select class="input score-select" name="exact_away_score">@for($i=0;$i<=9;$i++)<option value="{{ $i }}">{{ $i }}</option>@endfor</select><div class="form-error" data-error-for="exact_away_score"></div></div>
+                        <div class="field">
+                            <label>گل {{ $homeName }}</label>
+                            <select class="input score-select" name="exact_home_score">
+                                @for($i=0;$i<=9;$i++)<option value="{{ $i }}" @selected((int) ($formEntry?->exact_home_score ?? 0) === $i)>{{ $i }}</option>@endfor
+                            </select>
+                            <div class="form-error" data-error-for="exact_home_score"></div>
+                        </div>
+                        <div class="field">
+                            <label>گل {{ $awayName }}</label>
+                            <select class="input score-select" name="exact_away_score">
+                                @for($i=0;$i<=9;$i++)<option value="{{ $i }}" @selected((int) ($formEntry?->exact_away_score ?? 0) === $i)>{{ $i }}</option>@endfor
+                            </select>
+                            <div class="form-error" data-error-for="exact_away_score"></div>
+                        </div>
                     </div>
                     <div class="field">
                         <label>مجموع گل‌ها</label>
                         <div class="segmented" style="grid-template-columns:repeat(2,minmax(0,1fr));">
-                            <label><input type="radio" name="total_goals_option" value="under_2_5" checked><span class="segment">کمتر از ۲.۵</span></label>
-                            <label><input type="radio" name="total_goals_option" value="over_2_5"><span class="segment">بیشتر از ۲.۵</span></label>
+                            <label><input type="radio" name="total_goals_option" value="under_2_5" @checked($selectedTotalGoals === 'under_2_5')><span class="segment">کمتر از ۲.۵</span></label>
+                            <label><input type="radio" name="total_goals_option" value="over_2_5" @checked($selectedTotalGoals === 'over_2_5')><span class="segment">بیشتر از ۲.۵</span></label>
                         </div>
                         <div class="form-error" data-error-for="total_goals_option"></div>
                     </div>
@@ -88,8 +107,8 @@
                             @elseif($match->is_placeholder_match)
                                 <option value="">بعد از مشخص شدن تیم‌ها فعال می‌شود</option>
                             @else
-                                <option value="{{ $match->home_team_id }}">{{ $homeName }}</option>
-                                <option value="{{ $match->away_team_id }}">{{ $awayName }}</option>
+                                <option value="{{ $match->home_team_id }}" @selected((int) $formEntry?->qualified_team_id === (int) $match->home_team_id)>{{ $homeName }}</option>
+                                <option value="{{ $match->away_team_id }}" @selected((int) $formEntry?->qualified_team_id === (int) $match->away_team_id)>{{ $awayName }}</option>
                             @endif
                         </select>
                         <div class="form-error" data-error-for="qualified_team_id"></div>
@@ -97,17 +116,17 @@
                     <div class="token-stake-panel">
                         <div>
                             <label for="stake_tokens">تعداد توکن شرط</label>
-                            <p class="muted small">حداقل شرط ۵۰ توکن است. هر توکن برابر ۱۰۰۰ تومان است و در پایان جام مبنای بدهکاری یا بستانکاری قرار می‌گیرد.</p>
+                            <p class="muted small">حداقل شرط ۵۰ توکن است. هر ۱ توکن برابر ۱ تومان است؛ مثلا ۱۰۰ هزار تومان می‌شود ۱۰۰۰۰۰ توکن.</p>
                         </div>
                         <div class="token-input-wrap">
-                            <input id="stake_tokens" class="input" name="stake_tokens" type="number" inputmode="numeric" min="50" max="100000" value="50">
+                            <input id="stake_tokens" class="input" name="stake_tokens" type="number" inputmode="numeric" min="50" max="100000" value="{{ $stakeValue }}">
                             <span>توکن</span>
                         </div>
-                        <div class="summary-row token-summary"><span>ثبت نهایی</span><strong data-payable-amount>۵۰ توکن</strong></div>
+                        <div class="summary-row token-summary"><span>ثبت نهایی</span><strong data-payable-amount>{{ number_format($stakeValue) }} توکن</strong></div>
                         <div class="form-error" data-error-for="stake_tokens"></div>
                     </div>
                     <div class="form-error" data-error-for="match"></div>
-                    <button class="btn btn-primary w-full" type="submit" style="margin-top:16px;">ثبت شرط با توکن</button>
+                    <button class="btn btn-primary w-full" type="submit" style="margin-top:16px;">{{ $formEntry ? 'ذخیره ویرایش' : 'ثبت شرط با توکن' }}</button>
                 </form>
             </x-ui.card>
         @endif
@@ -117,6 +136,7 @@
         <x-ui.card>
             <h2 class="section-title" style="margin-top:0;">راهنمای امتیاز و صندوق</h2>
             <div class="guide-list">
+                <div><strong>مهلت ویرایش</strong><span>ثبت و ویرایش پیش‌بینی تا قبل از شروع نیمه دوم باز است؛ بعد از آن بازی قفل می‌شود.</span></div>
                 <div><strong>نتیجه نهایی</strong><span>انتخاب درست برد، مساوی یا باخت ۳ امتیاز دارد.</span></div>
                 <div><strong>نتیجه دقیق</strong><span>اگر تعداد گل هر دو تیم دقیق باشد، ۵ امتیاز اضافه می‌شود.</span></div>
                 <div><strong>مجموع گل‌ها</strong><span>کمتر از ۳ گل یعنی کمتر از ۲.۵ و سه گل یا بیشتر یعنی بیشتر از ۲.۵؛ پاسخ درست ۲ امتیاز دارد.</span></div>

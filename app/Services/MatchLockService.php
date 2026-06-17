@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\AppSetting;
 use App\Models\FootballMatch;
 use Carbon\CarbonInterface;
 
@@ -10,10 +9,9 @@ class MatchLockService
 {
     private const LOCKED_STATUSES = [
         'live',
-        'live_first_half',
-        'halftime',
         'live_second_half',
         'finished',
+        'settled',
         'awarded',
         'after_extra_time',
         'after_penalties',
@@ -37,11 +35,15 @@ class MatchLockService
 
     public function lockTime(FootballMatch $match): CarbonInterface
     {
-        $minutes = max(0, AppSetting::getInt('prediction_lock_minutes', 60));
-        $configuredLock = $match->prediction_locks_at ?: $match->starts_at->copy()->subMinutes($minutes);
-        $firstHalfFailsafe = $match->starts_at->copy()->addMinutes(55);
+        $secondHalfFailsafe = $match->starts_at->copy()->addMinutes(60);
 
-        return $configuredLock->lt($firstHalfFailsafe) ? $configuredLock : $firstHalfFailsafe;
+        if ($match->prediction_locks_at && $match->prediction_locks_at->gt($match->starts_at)) {
+            return $match->prediction_locks_at->lt($secondHalfFailsafe)
+                ? $match->prediction_locks_at
+                : $secondHalfFailsafe;
+        }
+
+        return $secondHalfFailsafe;
     }
 
     public function reason(FootballMatch $match): ?string
@@ -50,10 +52,14 @@ class MatchLockService
             return null;
         }
 
-        if (in_array($match->status, ['finished', 'awarded', 'after_extra_time', 'after_penalties'], true)) {
-            return 'این بازی پایان یافته و امکان ثبت پیش‌بینی ندارد.';
+        if (in_array($match->status, ['finished', 'settled', 'awarded', 'after_extra_time', 'after_penalties'], true)) {
+            return 'این بازی پایان یافته و امکان ثبت یا ویرایش پیش‌بینی ندارد.';
         }
 
-        return 'زمان پیش‌بینی این بازی به پایان رسیده است.';
+        if ($match->status === 'live_second_half') {
+            return 'نیمه دوم شروع شده و پیش‌بینی این بازی بسته شده است.';
+        }
+
+        return 'مهلت ثبت و ویرایش پیش‌بینی این بازی به پایان رسیده است.';
     }
 }
